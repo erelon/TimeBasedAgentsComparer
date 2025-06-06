@@ -10,8 +10,8 @@ agent.
    Clone the repository to your local machine.
 
    ```bash
-   git clone <repository-url>
-   cd <repository-folder>
+   git clone https://github.com/erelon/TimeBasedAgentsComparer
+   cd TimeBasedAgentsComparer
    ```
 
 2. **Install Dependencies**:
@@ -85,30 +85,31 @@ Oracle Agent: Average Reward over 100 steps: 3.00937080713335
 --------------------------------------------------
 
 Best action ratio for Random Agent:
-Random Agent: Average Reward over 100 steps: 2.5175804481498507
+Random Agent: Average Reward over 100 steps: 2.5074142216498756
 --------------------------------------------------
 
 Best action ratio for QLearning Agent:
-State 0: Best Action Ratio: 0.9494949494949495
-QLearning Agent: Average Reward over 100 steps: 2.953764647206671
+State 0: Best Action Ratio: 0.898989898989899
+QLearning Agent: Average Reward over 100 steps: 2.909443733202572
 --------------------------------------------------
 
 Best action ratio for RL Agent with trick:
-State 0: Best Action Ratio: 0.9292929292929293
-RL Agent with trick: Average Reward over 100 steps: 2.932719917563314
+State 0: Best Action Ratio: 0.9696969696969697
+RL Agent with trick: Average Reward over 100 steps: 2.9796628519887505
 --------------------------------------------------
 
 Best action ratio for RL Agent without trick:
-State 0: Best Action Ratio: 0.98989898989899
-RL Agent without trick: Average Reward over 100 steps: 2.9944546413960564
+State 0: Best Action Ratio: 1.0
+RL Agent without trick: Average Reward over 100 steps: 3.00937080713335
 --------------------------------------------------
 
 Best action ratio for Continues MAB:
-State 0: Best Action Ratio: 0.5656565656565656
-Continues MAB: Average Reward over 100 steps: 2.573796695966052
+State 0: Best Action Ratio: 0.5353535353535354
+Continues MAB: Average Reward over 100 steps: 2.548829239704895
 --------------------------------------------------
 
 Best action ratio for MAB:
 State 0: Best Action Ratio: 1.0
-MAB: Average Reward over 100 steps: 3.004274629382092
+MAB: Average Reward over 100 steps: 3.00937080713335
+--------------------------------------------------
 ```
