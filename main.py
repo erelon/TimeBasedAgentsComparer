@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from env import StatelessEnv
-from learners import RandomAgent, QLearningAgent, RLAgent, ContinuesMAB, OracleAgent
+from learners import RandomAgent, QLearningAgent, RLAgent, ContinuesMAB, OracleAgent, MAB
 
 
 def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
@@ -38,9 +38,10 @@ if __name__ == '__main__':
     r_agent_with_trick = RLAgent(name="RL Agent with trick", action_space=env.get_action_space())
     r_agent_without_trick = RLAgent(name="RL Agent without trick", action_space=env.get_action_space(),
                                     with_rho_trick=False)
+    mab = MAB(name="MAB", action_space=env.get_action_space())
     c_mab = ContinuesMAB(name="Continues MAB", action_space=env.get_action_space())
 
-    agents = [orcale, q_agent, r_agent_with_trick, r_agent_without_trick, random_agent, c_mab]
+    agents = [orcale, random_agent, q_agent, r_agent_with_trick, r_agent_without_trick, c_mab, mab]
     episodes = 2000
     eval_steps = 100
     for agent in agents:
