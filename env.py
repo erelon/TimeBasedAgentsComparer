@@ -7,6 +7,7 @@ class AbstractEnvironment:
         self.action_space = None
         # we want to make sure the random seed is set for reproducibility
         self.seed = seed if seed is not None else 42
+        self.rng = random.Random(seed if seed is not None else 42)  # Initialize the random seed
         self.reset()
 
     def reset(self):
@@ -14,7 +15,7 @@ class AbstractEnvironment:
         Reset the environment to its initial state.
         """
         # we need to reset the random seed for reproducibility
-        random.seed(self.seed)
+        self.rng.seed(self.seed)
 
     def set_seed(self, seed: int):
         """
@@ -81,14 +82,14 @@ class StatelessEnv(AbstractEnvironment):
         """
         # Roll for time
         if action == 0:
-            time = random.gauss(6, 2)
+            time = self.rng.gauss(6, 2)
         elif action == 1:
-            time = random.gauss(4, 2)
+            time = self.rng.gauss(4, 2)
 
         # make sure time is positive
         time = max(0, time)
         # roll between 0 and time with mean of time/2:
-        reward = random.gauss(time / 2, time / 4)
+        reward = self.rng.gauss(time / 2, time / 4)
         return time, max(0, reward)
 
     def secret(self):
