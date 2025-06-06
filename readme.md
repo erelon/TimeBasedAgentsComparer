@@ -10,8 +10,8 @@ agent.
    Clone the repository to your local machine.
 
    ```bash
-   git clone <repository-url>
-   cd <repository-folder>
+   git clone https://github.com/erelon/TimeBasedAgentsComparer
+   cd TimeBasedAgentsComparer
    ```
 
 2. **Install Dependencies**:
