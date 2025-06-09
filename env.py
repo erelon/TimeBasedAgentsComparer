@@ -7,7 +7,9 @@ class AbstractEnvironment:
         self.action_space = None
         # we want to make sure the random seed is set for reproducibility
         self.seed = seed if seed is not None else 42
-        self.rng = random.Random(seed if seed is not None else 42)  # Initialize the random seed
+        self.rng = random.Random(
+            seed if seed is not None else 42
+        )  # Initialize the random seed
         self.reset()
 
     def reset(self):
@@ -76,15 +78,16 @@ class StatelessEnv(AbstractEnvironment):
 
     def get_reward(self, agent, action):
         """
-        Get the reward for the given action.
-        For action 0 - result between 0 and 10 with the mean of 5 in normal distribution.
-        For action 1 - result between 0 and 10 with the mean of 6 in normal distribution.
+        Get the interval duration and reward for the given action.
+        action 0 is supposed to be better (higher reward)
         """
         # Roll for time
         if action == 0:
-            time = self.rng.gauss(6, 2)
+            time = self.rng.gauss(6, 2)  # TODO: replace with constants
         elif action == 1:
-            time = self.rng.gauss(4, 2)
+            time = self.rng.gauss(
+                4, 2
+            )  # TODO replace with same constant as before, set mean here to be as above minus some constant. This way we can play with separation between the arms
 
         # make sure time is positive
         time = max(0, time)
