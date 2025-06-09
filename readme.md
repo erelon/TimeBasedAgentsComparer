@@ -17,7 +17,7 @@ agent.
 2. **Install Dependencies**:
    Ensure you have Python 3.8+ installed.
    ```bash
-   pip install -r requirments.txt
+   pip install -r requirements.txt
    ```
 
 3. **Run the Main Script**:
