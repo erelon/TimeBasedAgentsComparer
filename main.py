@@ -1,7 +1,8 @@
 from collections import defaultdict
-
 from env import StatelessEnv
-from learners import RandomAgent, QLearningAgent, RLAgent, ContinuesMAB, OracleAgent, MAB
+from learners import *
+
+import pandas as pd
 
 
 def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
@@ -34,16 +35,26 @@ if __name__ == '__main__':
     orcale = OracleAgent(name="Oracle Agent", action_space=env.get_action_space(), env_secret=env.secret())
 
     q_agent = QLearningAgent(name="QLearning Agent", action_space=env.get_action_space())
+    continuousQ_agent = ContinuousQLearningAgent(name="Continuous QLearning Agent",
+                                                 action_space=env.get_action_space())
     random_agent = RandomAgent(name="Random Agent", action_space=env.get_action_space())
     r_agent_with_trick = RLAgent(name="RL Agent with trick", action_space=env.get_action_space())
     r_agent_without_trick = RLAgent(name="RL Agent without trick", action_space=env.get_action_space(),
                                     with_rho_trick=False)
+    continuous_r_agent_with_trick = ContinuousRLAgent(name="Continuous RL Agent with trick",
+                                                      action_space=env.get_action_space())
+    continuous_r_agent_without_trick = ContinuousRLAgent(name="Continuous RL Agent without trick",
+                                                         action_space=env.get_action_space(),
+                                                         with_rho_trick=False)
     mab = MAB(name="MAB", action_space=env.get_action_space())
     c_mab = ContinuesMAB(name="Continues MAB", action_space=env.get_action_space())
 
-    agents = [orcale, random_agent, q_agent, r_agent_with_trick, r_agent_without_trick, c_mab, mab]
+    agents = [orcale, random_agent, q_agent, continuousQ_agent, r_agent_with_trick, r_agent_without_trick,
+              continuous_r_agent_with_trick, continuous_r_agent_without_trick, c_mab, mab]
+
     episodes = 2000
     eval_steps = 100
+    results = defaultdict(dict)
     for agent in agents:
         # Check if that the agent learning is consistent - for each state what is the chosen action?
         # do all learning agents agree?
@@ -58,10 +69,16 @@ if __name__ == '__main__':
                 best_action = max(actions, key=actions.get)
                 best_action_per_state[state].append(best_action)
         # Print the best action ratio for each state
+        results[agent.name] = \
+            {f"Average Reward over {eval_steps} steps": sum(avg_rewards) / len(avg_rewards)}
         print(f"Best action ratio for {agent.name}:")
         for state, actions in best_action_per_state.items():
             best_action_ratio = len([i for i in actions if i == orcale.act(state)]) / len(actions)
             print(f"State {state}: Best Action Ratio: {best_action_ratio}")
+            results[agent.name][f"State {state} Best Action Ratio"] = best_action_ratio
         print(f"{agent.name}: Average Reward over {eval_steps} steps: {sum(avg_rewards) / len(avg_rewards)}")
         print("-" * 50)
         print()
+
+    # Print the results
+    print(pd.DataFrame(results).to_string())

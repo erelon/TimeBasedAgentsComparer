@@ -39,6 +39,65 @@ class Agent:
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 
+class OracleAgent(Agent):
+    """
+    Oracle agent that provides the optimal action for a given state.
+    This is typically used for benchmarking purposes.
+    """
+
+    def __init__(self, name: str, action_space=None, env_secret=None):
+        super().__init__(name, action_space)
+        if env_secret is None:
+            raise ValueError("OracleAgent requires an environment secret to provide optimal actions.")
+        self.env_secret = env_secret
+
+    def reset(self):
+        pass
+
+    def act(self, state):
+        """
+        Return the optimal action for the given state.
+        This method should be overridden by subclasses to provide the actual oracle logic.
+        """
+        return self.env_secret(state)
+
+    def eval(self, state):
+        return self.act(state)  # For oracle, eval is the same as act
+
+    def learn(self, state, action, reward, next_state, time):
+        pass  # No learning mechanism for oracle agent
+
+
+class RandomAgent(Agent):
+    """
+    Random agent that chooses actions randomly.
+    """
+
+    def __init__(self, name: str, action_space=None):
+        super().__init__(name, action_space)
+
+    def reset(self):
+        pass
+
+    def act(self, state):
+        """
+        Choose a random action from the action space.
+        """
+        return random.choice(self.action_space)
+
+    def eval(self, state):
+        """
+        Random agent does not evaluate states.
+        """
+        return random.choice(self.action_space)
+
+    def learn(self, state, action, reward, next_state, time):
+        """
+        Random agent does not learn from the environment.
+        """
+        pass  # No learning mechanism for random agent
+
+
 class QLearningAgent(Agent):
     """
     Q-learning agent that learns from the environment.
@@ -91,63 +150,32 @@ class QLearningAgent(Agent):
         self.q_table[state][action] += self.learning_rate * td_error
 
 
-class RandomAgent(Agent):
+class ContinuousQLearningAgent(QLearningAgent):
     """
-    Random agent that chooses actions randomly.
+    Continuous Q-learning agent that learns from the environment.
+    This agent is designed for environments with continuous action spaces.
     """
 
-    def __init__(self, name: str, action_space=None):
-        super().__init__(name, action_space)
-
-    def reset(self):
-        pass
-
-    def act(self, state):
-        """
-        Choose a random action from the action space.
-        """
-        return random.choice(self.action_space)
-
-    def eval(self, state):
-        """
-        Random agent does not evaluate states.
-        """
-        return random.choice(self.action_space)
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, discount_factor=0.99, exploration_rate=0.1,
+                 _lambda=0.1):
+        super().__init__(name, action_space, learning_rate, discount_factor, exploration_rate)
+        self._lambda = _lambda
 
     def learn(self, state, action, reward, next_state, time):
         """
-        Random agent does not learn from the environment.
+        Update the Q-value based on the action taken and the reward received.
+        This method is adapted for continuous action spaces.
         """
-        pass  # No learning mechanism for random agent
+        if next_state not in self.q_table:
+            self.q_table[next_state] = {action: 0 for action in self.action_space}
 
+        best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
+        td_target = reward + self.discount_factor * self.q_table[next_state][best_next_action]
+        td_error = td_target - self.q_table[state][action]
 
-class OracleAgent(Agent):
-    """
-    Oracle agent that provides the optimal action for a given state.
-    This is typically used for benchmarking purposes.
-    """
-
-    def __init__(self, name: str, action_space=None, env_secret=None):
-        super().__init__(name, action_space)
-        if env_secret is None:
-            raise ValueError("OracleAgent requires an environment secret to provide optimal actions.")
-        self.env_secret = env_secret
-
-    def reset(self):
-        pass
-
-    def act(self, state):
-        """
-        Return the optimal action for the given state.
-        This method should be overridden by subclasses to provide the actual oracle logic.
-        """
-        return self.env_secret(state)
-
-    def eval(self, state):
-        return self.act(state)  # For oracle, eval is the same as act
-
-    def learn(self, state, action, reward, next_state, time):
-        pass  # No learning mechanism for oracle agent
+        lr = self.learning_rate / (1 + self._lambda * time)  # Adjust learning rate over time
+        # Update Q-value
+        self.q_table[state][action] += lr * td_error
 
 
 class RLAgent(QLearningAgent):
@@ -194,6 +222,44 @@ class RLAgent(QLearningAgent):
                 best_current_action] - self.rho)
         elif not self.with_rho_trick:
             self.rho = self.rho + self.learning_rate * (
+                    reward + self.q_table[next_state][best_next_action] - self.q_table[next_state][
+                best_current_action] - self.rho)
+
+
+class ContinuousRLAgent(RLAgent):
+    """
+    Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
+    This agent is designed for environments with continuous rewards.
+    """
+
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True,
+                 _lambda=0.1):
+        super().__init__(name, action_space, learning_rate, exploration_rate, with_rho_trick)
+        self._lambda = _lambda
+
+    def learn(self, state, action, reward, next_state, time):
+        """
+        Update the agent's knowledge based on the action taken and the reward received.
+        This method is adapted for continuous rewards.
+        """
+        if next_state not in self.q_table:
+            self.q_table[next_state] = {action: 0 for action in self.action_space}
+
+        lr = self.learning_rate / (1 + self._lambda * time)  # Adjust learning rate over time
+
+        best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
+        self.q_table[state][action] = \
+            self.q_table[state][action] + lr * (
+                    reward - self.rho + self.q_table[next_state][best_next_action] - self.q_table[state][action])
+
+        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
+
+        if self.with_rho_trick and self.q_table[state][action] == self.q_table[state][best_current_action]:
+            self.rho = self.rho + lr * (
+                    reward + self.q_table[next_state][best_next_action] - self.q_table[next_state][
+                best_current_action] - self.rho)
+        elif not self.with_rho_trick:
+            self.rho = self.rho + lr * (
                     reward + self.q_table[next_state][best_next_action] - self.q_table[next_state][
                 best_current_action] - self.rho)
 

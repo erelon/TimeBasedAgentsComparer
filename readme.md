@@ -15,7 +15,10 @@ agent.
    ```
 
 2. **Install Dependencies**:
-   Ensure you have Python 3.8+ installed. No dependencies at this stage.
+   Ensure you have Python 3.8+ installed.
+   ```bash
+   pip install -r requirments.txt
+   ```
 
 3. **Run the Main Script**:
    Execute the `main.py` file to train and evaluate the agents.
@@ -61,6 +64,11 @@ The project includes the following types of agents:
 6. **`MAB`**:
     - A multi-armed bandit agent.
     - Learns from discrete rewards and updates Q-values based on the average reward per action according to steps.
+7. **`ContinuousQLearningAgent`**
+   - A QLearn variant that receive lambda as a parameter to multiply by time to adjust the learning rate accordingly.
+   
+8. **`ContinuousRLAgent`**
+   - A RLearn variant that receive lambda as a parameter to multiply by time to adjust the learning rate accordingly.
 
 ---
 
@@ -80,36 +88,8 @@ state transitions.
 
 ## Current output
 ```
-Best action ratio for Oracle Agent:
-Oracle Agent: Average Reward over 100 steps: 3.00937080713335
---------------------------------------------------
+                               Oracle Agent  Random Agent  QLearning Agent  Continuous QLearning Agent  RL Agent with trick  RL Agent without trick  Continuous RL Agent with trick  Continuous RL Agent without trick  Continues MAB       MAB
+Average Reward over 100 steps      3.009371      2.516878         2.928913                    2.929287             2.979774                2.999519                        2.988615                           2.999147       2.598244  3.009371
+State 0 Best Action Ratio               NaN           NaN         0.919192                    0.919192             0.969697                0.989899                        0.979798                           0.989899       0.585859  1.000000
 
-Best action ratio for Random Agent:
-Random Agent: Average Reward over 100 steps: 2.5074142216498756
---------------------------------------------------
-
-Best action ratio for QLearning Agent:
-State 0: Best Action Ratio: 0.898989898989899
-QLearning Agent: Average Reward over 100 steps: 2.909443733202572
---------------------------------------------------
-
-Best action ratio for RL Agent with trick:
-State 0: Best Action Ratio: 0.9696969696969697
-RL Agent with trick: Average Reward over 100 steps: 2.9796628519887505
---------------------------------------------------
-
-Best action ratio for RL Agent without trick:
-State 0: Best Action Ratio: 1.0
-RL Agent without trick: Average Reward over 100 steps: 3.00937080713335
---------------------------------------------------
-
-Best action ratio for Continues MAB:
-State 0: Best Action Ratio: 0.5353535353535354
-Continues MAB: Average Reward over 100 steps: 2.548829239704895
---------------------------------------------------
-
-Best action ratio for MAB:
-State 0: Best Action Ratio: 1.0
-MAB: Average Reward over 100 steps: 3.00937080713335
---------------------------------------------------
 ```
