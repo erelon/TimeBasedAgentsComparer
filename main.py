@@ -1,5 +1,5 @@
 from collections import defaultdict
-from env import StatelessEnv
+from env import *
 from learners import *
 
 import pandas as pd
@@ -9,6 +9,7 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
     """
     Train the agent in the given environment for a specified number of episodes.
     """
+    random.seed(seed)
     env.set_seed(seed)
     env.reset()
     state = env.get_state()  # In a stateless environment, state is not used
@@ -29,9 +30,7 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
     return sum(rewards) / len(rewards)
 
 
-if __name__ == '__main__':
-    env = StatelessEnv("Stateless Environment")
-
+def experiment_runner(env, name="Experiment"):
     orcale = OracleAgent(name="Oracle Agent", action_space=env.get_action_space(), env_secret=env.secret())
 
     q_agent = QLearningAgent(name="QLearning Agent", action_space=env.get_action_space())
@@ -49,8 +48,15 @@ if __name__ == '__main__':
     mab = MAB(name="MAB", action_space=env.get_action_space())
     c_mab = ContinuesMAB(name="Continues MAB", action_space=env.get_action_space())
 
-    agents = [orcale, random_agent, q_agent, continuousQ_agent, r_agent_with_trick, r_agent_without_trick,
-              continuous_r_agent_with_trick, continuous_r_agent_without_trick, c_mab, mab]
+    ucb = UCB(name="UCB", action_space=env.get_action_space())
+    continuosUCB = ContinuosUCB(name="Continuous UCB", action_space=env.get_action_space())
+
+    agents = [orcale,
+                random_agent,
+                ucb, continuosUCB,
+                q_agent, continuousQ_agent,
+              r_agent_with_trick, continuous_r_agent_with_trick,
+              r_agent_without_trick, continuous_r_agent_without_trick,]
 
     episodes = 2000
     eval_steps = 100
@@ -60,7 +66,7 @@ if __name__ == '__main__':
         # do all learning agents agree?
         best_action_per_state = defaultdict(list)
         avg_rewards = []
-        for i in range(1, 100):
+        for i in range(1, 500):
             agent.reset()
             avg_reward = train_single_agent(agent, env, episodes=episodes, eval_steps=eval_steps, seed=i)
             avg_rewards.append(avg_reward)
@@ -81,4 +87,19 @@ if __name__ == '__main__':
         print()
 
     # Print the results
-    print(pd.DataFrame(results).to_string())
+    df = pd.DataFrame(results,)
+    print(df.to_string())
+    # Save the results to a CSV file with float values up to 3 decimal places
+    df.to_csv(f"{name}_results.csv", float_format='%.3f')
+
+
+if __name__ == '__main__':
+    stateless_env = StatelessEnv("Stateless Environment")
+    two_state_ed_env = TwoStatesEvenDistEnv("Two States Even Distribution Environment")
+    two_state_ued_env = TwoStatesUnevenDistEnv("Two States Uneven Distribution Environment")
+
+    # Run experiments for each environment
+    # experiment_runner(stateless_env, name="Stateless Environment Experiment")
+
+    # experiment_runner(two_state_ed_env, name="Two States Even Distribution Environment Experiment")
+    experiment_runner(two_state_ued_env, name="Two States Uneven Distribution Environment Experiment")

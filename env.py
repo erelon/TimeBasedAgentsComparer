@@ -32,14 +32,21 @@ class AbstractEnvironment:
     def get_state(self, agent=None):
         """
         Get the current state of the environment.
-        This method should be implemented by subclasses.
+        In a stateless environment, the state is always 0.
         """
-        raise NotImplementedError("This method should be overridden by subclasses.")
+        return self.state
 
     def get_action_space(self):
         return self.action_space
 
-    def get_reward(self, agent, action):
+    def update_state(self, action=None):
+        """
+        Update the state of the environment.
+        This method should be implemented by subclasses.
+        """
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def get_reward(self, agent, action, state):
         """
         Get the reward for the given action.
         This method should be implemented by subclasses.
@@ -67,14 +74,6 @@ class StatelessEnv(AbstractEnvironment):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.action_space = [0, 1]
-
-    def get_state(self, agent=None):
-        """
-        Get the current state of the environment.
-        In a stateless environment, the state is always 0.
-        """
-        return 0
 
     def get_reward(self, agent, action):
         """
@@ -82,23 +81,123 @@ class StatelessEnv(AbstractEnvironment):
         action 0 is supposed to be better (higher reward)
         """
         # Roll for time
-        if action == 0:
-            time = self.rng.gauss(6, 2)  # TODO: replace with constants
-        elif action == 1:
-            time = self.rng.gauss(
-                4, 2
-            )  # TODO replace with same constant as before, set mean here to be as above minus some constant. This way we can play with separation between the arms
+        T = self.rng.uniform(1, 100)  # Randomly choose a time between 0 and 10
+
+        if action == 1:
+            time = self.rng.gauss(T * 0.6, 2)
+        elif action == 0:
+            time = self.rng.gauss(T * 0.4, 2)
+        else:
+            raise
 
         # make sure time is positive
         time = max(0, time)
-        # roll between 0 and time with mean of time/2:
-        reward = self.rng.gauss(time / 2, time / 4)
-        return time, max(0, reward)
+        time = min(T, time)
+
+        self.update_state()
+        return T, time
+
+
+class TwoStatesEvenDistEnv(AbstractEnvironment):
+    """
+    Two states environment with even distribution.
+    """
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.action_space = [0, 1]
+        self.state = 0
+
+    def update_state(self, action):
+        """
+        Update the state of the environment.
+        In this environment, we can switch between two states.
+        """
+        self.state = self.rng.choice([0, 1])
+
+    def get_reward(self, agent, action):
+        """
+        Get the interval duration and reward for the given action.
+        action 0 is supposed to be better (higher reward) for state 0
+        action 1 is supposed to be better (higher reward) for state 1
+        """
+        T = self.rng.uniform(1, 100)
+        if self.state == 0:
+            if action == 0:
+                time = self.rng.gauss(T * 0.6, 2)
+            elif action == 1:
+                time = self.rng.gauss(T * 0.55, 2)
+        else:  # state 1
+            if action == 0:
+                time = self.rng.gauss(T * 0.45, 2)
+            elif action == 1:
+                time = self.rng.gauss(T * 0.5, 2)
+
+        # make sure time is positive
+        time = max(0, time)
+        time = min(T, time)
+
+        self.update_state(action)
+        return T, time
 
     def secret(self):
         """
         A helper method to load an oracle for the environment.
-        In a stateless environment, we can return a fixed oracle.
+        In this environment, we can return a fixed oracle that always returns action 0.
         :return:
         """
-        return lambda state: 0  # Always return action 0 as the best action
+        return lambda state: 0 if state == 0 else 1
+
+
+class TwoStatesUnevenDistEnv(AbstractEnvironment):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.action_space = [0, 1]
+        self.state = 0
+
+    def update_state(self, action):
+        """
+        Update the state of the environment.
+        In this environment, we can switch between two states.
+        """
+        if self.state == 0:
+            self.state = 1 if self.rng.random() < 0.2 else 0
+
+        elif self.state == 1 and action == 0:
+            self.state = 0 if self.rng.random() < 0.25 else 1
+
+        elif self.state == 1 and action == 1:
+            self.state = 0 if self.rng.random() < 0.75 else 1
+
+    def get_reward(self, agent, action):
+        """
+        Get the interval duration and reward for the given action.
+        action 0 is supposed to be better (higher reward) for state 0
+        action 1 is supposed to be better (higher reward) for state 1
+        """
+        T = self.rng.uniform(1, 100)
+        if self.state == 0:
+            if action == 0:
+                time = self.rng.gauss(T * 0.6, 2)
+            elif action == 1:
+                time = self.rng.gauss(T * 0.55, 2)
+        else:  # state 1
+            if action == 0:
+                time = self.rng.gauss(T * 0.3, 2)
+            elif action == 1:
+                time = self.rng.gauss(T * 0.1, 2)
+
+        # make sure time is positive
+        time = max(0, time)
+        time = min(T, time)
+
+        self.update_state(action)
+        return T, time
+
+    def secret(self):
+        """
+        A helper method to load an oracle for the environment.
+        In this environment, we can return a fixed oracle that always returns action 0.
+        :return:
+        """
+        return lambda state: 0 if state == 0 else 1
