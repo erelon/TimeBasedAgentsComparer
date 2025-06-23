@@ -67,7 +67,7 @@ def experiment_runner(env, name="Experiment"):
 
     episodes = 2000
     eval_steps = 200
-    epochs = 1
+    epochs = 400 
     results = defaultdict(dict)
     for agent in agents:
         # Check if that the agent learning is consistent - for each state what is the chosen action?

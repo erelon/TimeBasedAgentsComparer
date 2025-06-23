@@ -191,7 +191,7 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
                 time = self.rng.gauss(T * 0.5, 2)
         else:  # state 1
             if action == 0:
-                time = self.rng.gauss(T * 0.5, 2)
+                time = self.rng.gauss(T * 0.4, 2)
             elif action == 1:
                 time = self.rng.gauss(T * 0.1, 2)
 
