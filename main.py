@@ -1,8 +1,9 @@
 from collections import defaultdict
-from env import *
-from learners import *
 
 import pandas as pd
+
+from env import *
+from learners import *
 
 
 def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
@@ -31,42 +32,49 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
 
 
 def experiment_runner(env, name="Experiment"):
-    orcale = OracleAgent(name="Oracle Agent", action_space=env.get_action_space(), env_secret=env.secret())
+    print(f"Running experiment with env: {name}")
+    orcale = OracleAgent(
+        name="Oracle Agent", action_space=env.get_action_space(), env_secret=env.secret())
 
-    q_agent = QLearningAgent(name="QLearning Agent", action_space=env.get_action_space())
-    continuousQ_agent = ContinuousQLearningAgent(name="Continuous QLearning Agent",
+    q_agent = QLearningAgent(name="QLearning",
+                             action_space=env.get_action_space())
+    continuousQ_agent = ContinuousQLearningAgent(name="Cont. QLearning",
                                                  action_space=env.get_action_space())
-    random_agent = RandomAgent(name="Random Agent", action_space=env.get_action_space())
-    r_agent_with_trick = RLAgent(name="RL Agent with trick", action_space=env.get_action_space())
-    r_agent_without_trick = RLAgent(name="RL Agent without trick", action_space=env.get_action_space(),
+    random_agent = RandomAgent(
+        name="Random Agent", action_space=env.get_action_space())
+    r_agent_with_trick = RLAgent(
+        name="RLearning (update on policy)", action_space=env.get_action_space())
+    r_agent_without_trick = RLAgent(name="RLearning (update always)", action_space=env.get_action_space(),
                                     with_rho_trick=False)
-    continuous_r_agent_with_trick = ContinuousRLAgent(name="Continuous RL Agent with trick",
+    continuous_r_agent_with_trick = ContinuousRLAgent(name="Cont. RLearning (update on-policy)",
                                                       action_space=env.get_action_space())
-    continuous_r_agent_without_trick = ContinuousRLAgent(name="Continuous RL Agent without trick",
+    continuous_r_agent_without_trick = ContinuousRLAgent(name="Cont. RLearning (update always)",
                                                          action_space=env.get_action_space(),
                                                          with_rho_trick=False)
     mab = MAB(name="MAB", action_space=env.get_action_space())
-    c_mab = ContinuesMAB(name="Continues MAB", action_space=env.get_action_space())
+    c_mab = ContinuesMAB(name="Continues MAB",
+                         action_space=env.get_action_space())
 
     ucb = UCB(name="UCB", action_space=env.get_action_space())
-    continuosUCB = ContinuosUCB(name="Continuous UCB", action_space=env.get_action_space())
+    continuosUCB = ContinuosUCB(
+        name="Continuous UCB", action_space=env.get_action_space())
 
-    agents = [orcale,
-                random_agent,
-                ucb, continuosUCB,
-                q_agent, continuousQ_agent,
-              r_agent_with_trick, continuous_r_agent_with_trick,
-              r_agent_without_trick, continuous_r_agent_without_trick,]
+    agents = [orcale, random_agent,
+             ucb, continuosUCB,
+             q_agent, continuousQ_agent,
+             r_agent_with_trick, continuous_r_agent_with_trick,
+             r_agent_without_trick, continuous_r_agent_without_trick,]
 
     episodes = 2000
-    eval_steps = 100
+    eval_steps = 200
+    epochs = 1
     results = defaultdict(dict)
     for agent in agents:
         # Check if that the agent learning is consistent - for each state what is the chosen action?
         # do all learning agents agree?
         best_action_per_state = defaultdict(list)
         avg_rewards = []
-        for i in range(1, 500):
+        for i in range(1, epochs+1):
             agent.reset()
             avg_reward = train_single_agent(agent, env, episodes=episodes, eval_steps=eval_steps, seed=i)
             avg_rewards.append(avg_reward)

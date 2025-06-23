@@ -1,6 +1,10 @@
 import random
 
 
+# All common env parameters are set in AbstractEnvironment __init__
+# in particular:
+#  interval min and max durations
+
 class AbstractEnvironment:
     def __init__(self, name: str, seed: int = None):
         self.name = name
@@ -10,6 +14,9 @@ class AbstractEnvironment:
         self.rng = random.Random(
             seed if seed is not None else 42
         )  # Initialize the random seed
+
+        self.interval_min_len = 20 
+        self.interval_max_len = 200
         self.reset()
 
     def reset(self):
@@ -81,7 +88,7 @@ class StatelessEnv(AbstractEnvironment):
         action 0 is supposed to be better (higher reward)
         """
         # Roll for time
-        T = self.rng.uniform(1, 100)  # Randomly choose a time between 0 and 10
+        T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
 
         if action == 1:
             time = self.rng.gauss(T * 0.6, 2)
@@ -121,7 +128,7 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
         action 0 is supposed to be better (higher reward) for state 0
         action 1 is supposed to be better (higher reward) for state 1
         """
-        T = self.rng.uniform(1, 100)
+        T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
         if self.state == 0:
             if action == 0:
                 time = self.rng.gauss(T * 0.6, 2)
@@ -164,10 +171,10 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
             self.state = 1 if self.rng.random() < 0.2 else 0
 
         elif self.state == 1 and action == 0:
-            self.state = 0 if self.rng.random() < 0.25 else 1
+            self.state = 0 if self.rng.random() < 0.2 else 1
 
         elif self.state == 1 and action == 1:
-            self.state = 0 if self.rng.random() < 0.75 else 1
+            self.state = 0 if self.rng.random() < 0.8 else 1
 
     def get_reward(self, agent, action):
         """
@@ -175,15 +182,16 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
         action 0 is supposed to be better (higher reward) for state 0
         action 1 is supposed to be better (higher reward) for state 1
         """
-        T = self.rng.uniform(1, 100)
+        T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
+
         if self.state == 0:
             if action == 0:
-                time = self.rng.gauss(T * 0.6, 2)
+                time = self.rng.gauss(T * 0.7, 2)
             elif action == 1:
-                time = self.rng.gauss(T * 0.55, 2)
+                time = self.rng.gauss(T * 0.5, 2)
         else:  # state 1
             if action == 0:
-                time = self.rng.gauss(T * 0.3, 2)
+                time = self.rng.gauss(T * 0.5, 2)
             elif action == 1:
                 time = self.rng.gauss(T * 0.1, 2)
 
