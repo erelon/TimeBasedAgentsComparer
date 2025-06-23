@@ -91,9 +91,9 @@ class StatelessEnv(AbstractEnvironment):
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
 
         if action == 1:
-            time = self.rng.gauss(T * 0.6, 2)
+            time = self.rng.normalvariate(T * 0.6, 2)
         elif action == 0:
-            time = self.rng.gauss(T * 0.4, 2)
+            time = self.rng.normalvariate(T * 0.4, 2)
         else:
             raise
 
@@ -131,14 +131,14 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
         if self.state == 0:
             if action == 0:
-                time = self.rng.gauss(T * 0.6, 2)
+                time = self.rng.normalvariate(T * 0.6, 2)
             elif action == 1:
-                time = self.rng.gauss(T * 0.55, 2)
+                time = self.rng.normalvariate(T * 0.55, 2)
         else:  # state 1
             if action == 0:
-                time = self.rng.gauss(T * 0.45, 2)
+                time = self.rng.normalvariate(T * 0.45, 2)
             elif action == 1:
-                time = self.rng.gauss(T * 0.5, 2)
+                time = self.rng.normalvariate(T * 0.5, 2)
 
         # make sure time is positive
         time = max(0, time)
@@ -186,14 +186,14 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
 
         if self.state == 0:
             if action == 0:
-                time = self.rng.gauss(T * 0.7, 2)
+                time = self.rng.normalvariate(T * 0.7, 2)
             elif action == 1:
-                time = self.rng.gauss(T * 0.5, 2)
+                time = self.rng.normalvariate(T * 0.5, 2)
         else:  # state 1
             if action == 0:
-                time = self.rng.gauss(T * 0.4, 2)
+                time = self.rng.normalvariate(T * 0.4, 2)
             elif action == 1:
-                time = self.rng.gauss(T * 0.1, 2)
+                time = self.rng.normalvariate(T * 0.1, 2)
 
         # make sure time is positive
         time = max(0, time)
