@@ -1,9 +1,9 @@
 import random
 
-
 # All common env parameters are set in AbstractEnvironment __init__
 # in particular:
 #  interval min and max durations
+
 
 class AbstractEnvironment:
     def __init__(self, name: str, seed: int = None):
@@ -15,8 +15,8 @@ class AbstractEnvironment:
             seed if seed is not None else 42
         )  # Initialize the random seed
 
-        self.interval_min_len = 20 
-        self.interval_max_len = 200
+        self.interval_min_len = 1
+        self.interval_max_len = 500
         self.reset()
 
     def reset(self):
@@ -168,7 +168,7 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
         In this environment, we can switch between two states.
         """
         if self.state == 0:
-            self.state = 1 if self.rng.random() < 0.2 else 0
+            self.state = 1 if self.rng.random() < 0.1 else 0
 
         elif self.state == 1 and action == 0:
             self.state = 0 if self.rng.random() < 0.2 else 1
@@ -191,7 +191,7 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
                 time = self.rng.normalvariate(T * 0.5, 2)
         else:  # state 1
             if action == 0:
-                time = self.rng.normalvariate(T * 0.4, 2)
+                time = self.rng.normalvariate(T * 0.5, 2)
             elif action == 1:
                 time = self.rng.normalvariate(T * 0.1, 2)
 
