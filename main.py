@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 
 import pandas as pd
@@ -74,26 +75,36 @@ def experiment_runner(env, name="Experiment"):
         name="Continuous UCB", action_space=env.get_action_space()
     )
 
+    harmonic_agent_with_trick = HarmonicRLAgent(name="harmonic (update on policy)",
+                                            action_space=env.get_action_space())
+    harmonic_agent_without_trick = HarmonicRLAgent(name="harmonic (update always)",
+                                            action_space=env.get_action_space(), with_rho_trick=False)
+
+
+
     agents = [
         orcale,
-        random_agent,
+        # random_agent,
         # ucb,
         # continuosUCB,
         # q_agent,
         # continuousQ_agent,
-        r_agent_with_trick,
-        continuous_r_agent_with_trick,
-        r_agent_without_trick,
-        continuous_r_agent_without_trick,
+        # r_agent_with_trick,
+        # continuous_r_agent_with_trick,
+        # r_agent_without_trick,
+        # continuous_r_agent_without_trick,
         smart_r_agent_with_trick,
-        smart_r_agent_without_trick,
+        # smart_r_agent_without_trick,
+        harmonic_agent_with_trick,
+        harmonic_agent_without_trick,
     ]
 
-    episodes = 5000
+    episodes = 2000
     eval_steps = 100
-    epochs = 50
+    epochs =50 
     results = defaultdict(dict)
     for agent in agents:
+        print(f"Agent: {agent.name}", file=sys.stderr)
         # Check if that the agent learning is consistent - for each state what is the chosen action?
         # do all learning agents agree?
         best_action_per_state = defaultdict(list)
