@@ -111,13 +111,15 @@ class QLearningAgent(Agent):
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.exploration_rate = exploration_rate
+        self.q_table = {}
+        self.first_report = True
 
     def act(self, state):
         """
         Choose an action based on the current state using an epsilon-greedy strategy.
         """
         if state not in self.q_table:
-            self.q_table[state] = {action: 0 for action in self.action_space}
+            self.q_table[state] = {action: 500 for action in self.action_space}
 
         if random.random() < self.exploration_rate:
             return random.choice(self.action_space)  # Explore
@@ -128,6 +130,7 @@ class QLearningAgent(Agent):
         """
         Reset the agent's knowledge and state.
         """
+        self.first_report = True
         self.q_table = {}
 
     def eval(self, state):
@@ -135,7 +138,13 @@ class QLearningAgent(Agent):
         Only exploit the knowledge of the agent.
         """
         if state not in self.q_table:
-            self.q_table[state] = {action: 0 for action in self.action_space}
+            self.q_table[state] = {action: 500 for action in self.action_space}
+
+        if self.first_report:
+            self.first_report = False
+            print(f"Eval {self.q_table.items()}")
+
+
         return max(self.q_table[state], key=self.q_table[state].get)
 
     def learn(self, state, action, reward, next_state, time):
@@ -143,7 +152,7 @@ class QLearningAgent(Agent):
         Update the Q-value based on the action taken and the reward received.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 0 for action in self.action_space}
+            self.q_table[next_state] = {action: 500 for action in self.action_space}
 
         best_next_action = max(
             self.q_table[next_state], key=self.q_table[next_state].get
@@ -176,35 +185,8 @@ class ContinuousQLearningAgent(QLearningAgent):
         if next_state not in self.q_table:
             self.q_table[next_state] = {action: 0 for action in self.action_space}
 
-        best_next_action = max(
-            self.q_table[next_state], key=self.q_table[next_state].get
-        )
-
-        df = math.exp(
-            -self._lambda * time * self.discount_factor
-        )  # Discount factor for continuous learning
-
-        td_target = reward + df * self.q_table[next_state][best_next_action]
-        td_error = td_target - self.q_table[state][action]
-
-        # Update Q-value
-        self.q_table[state][action] += self.learning_rate * td_error
-
-    def __init__(self, name: str, action_space=None, learning_rate=0.1, discount_factor=0.99, exploration_rate=0.1,
-                 _lambda=0.01):
-        super().__init__(name, action_space, learning_rate, discount_factor, exploration_rate)
-        self._lambda = _lambda
-
-    def learn(self, state, action, reward, next_state, time):
-        """
-        Update the Q-value based on the action taken and the reward received.
-        This method is adapted for continuous action spaces.
-        """
-        if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 0 for action in self.action_space}
-
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
-
+        
         df = math.exp(-self._lambda * time * self.discount_factor)  # Discount factor for continuous learning
 
         td_target = reward + df * self.q_table[next_state][best_next_action]
@@ -255,7 +237,7 @@ class RLAgent(QLearningAgent):
         Update the agent's knowledge based on the action taken and the reward received.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 0 for action in self.action_space}
+            self.q_table[next_state] = {action: 500 for action in self.action_space}
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
         best_next_action = max(
@@ -355,53 +337,56 @@ class HarmonicRLAgent(RLAgent):
             self.rho = 1/self.reciprocal_rho ## transforms to harmonic mean
             self.total_time += time
             self.total_reward += reward
-        print(f"reciprocal: {self.reciprocal_rho}, rho: {self.rho}, moving: {self.total_reward/self.total_time}, last d, r,t: {delta, reward, time}", file=sys.stderr)
+        # print(f"reciprocal: {self.reciprocal_rho}, rho: {self.rho}, moving: {self.total_reward/self.total_time}, last d, r,t: {delta, reward, time}", file=sys.stderr)
 
 class HarmonicQAgent(QLearningAgent):
     """
-    Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
+    Continuous Reinforcement Learning Agent based on discounted Q-learning algorithm, but with harmonic mean
     This agent is designed for environments with continuous rewards.
     """
 
-    def __init__(self, name: str, action_space=None, learning_rate=0.1, discount_factor = 0.99, exploration_rate=0.1, ):
-        super().__init__(
-            name, action_space, learning_rate, discount_factor, exploration_rate, )
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, discount_factor=0.99, exploration_rate=0.1):
+        super().__init__(name, action_space)
+        self.rq_table = {}
+   
+    def act(self, state):
+        """
+        Choose an action based on the current state using an epsilon-greedy strategy.
+        """
+        if state not in self.q_table:
+            self.q_table[state] = {action: 500 for action in self.action_space}
+            self.rq_table[state] = {action: 1.0 for action in self.action_space}
+
+
+        if random.random() < self.exploration_rate:
+            return random.choice(self.action_space)  # Explore
+        else:
+            return max(self.q_table[state], key=self.q_table[state].get)  # Exploit
+
+
+    def reset(self):
+        """
+        Reset the agent's knowledge and state.
+        """
+        super().reset()
+        self.rq_table = {}
 
     def learn(self, state, action, reward, next_state, time):
         """
-        Update the agent's knowledge based on the action taken and the reward received.
-        This method is adapted for continuous rewards.
+        Update the Q-value based on the action taken and the reward received.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 0 for action in self.action_space}
+            self.q_table[next_state] = {action: 500 for action in self.action_space}
+            self.rq_table[next_state] = {action: 1.0 for action in self.action_space}
 
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
-        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
-
-        df = math.exp(
-            -self._lambda * time * self.discount_factor
-        )  # Discount factor for continuous learning
-
-        td_target = reward + df * self.q_table[next_state][best_next_action]
-        td_error = td_target - self.q_table[state][action]
-
-        delta = (
-            reward
-            - self.rho*time
-            + self.q_table[next_state][best_next_action]
-            - self.q_table[state][action]
-        )
+        td_target = time/reward +   (self.discount_factor * 1/(self.rq_table[next_state][best_next_action]))
+        td_error = td_target - self.rq_table[state][action]
 
         # Update Q-value
-        self.q_table[state][action] += self.learning_rate * td_error 
+        self.rq_table[state][action] += self.learning_rate * td_error
+        self.q_table[state][action] = 1/self.rq_table[state][action]
 
-        self.q_table[state][action] += self.learning_rate * delta
-       
-        if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
-            self.reciprocal_rho += self.rho_learning_rate * (delta / time)   ## EMA of reciprocals
-            self.rho = 1/self.reciprocal_rho ## transforms to harmonic mean
-
-      
 
 class ContinuesMAB(Agent):
     """

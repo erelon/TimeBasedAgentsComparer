@@ -90,15 +90,15 @@ def experiment_runner(env, name="Experiment"):
         # continuosUCB,
         q_agent,
         continuousQ_agent,
-        # harmonicq_agent,
+        harmonicq_agent,
         # r_agent_with_trick,
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,
         # smart_r_agent_with_trick,
         # smart_r_agent_without_trick,
-        harmonic_agent_with_trick,
-        harmonic_agent_without_trick,
+        # harmonic_agent_with_trick,
+        # harmonic_agent_without_trick,
     ]
 
     episodes = 2000
