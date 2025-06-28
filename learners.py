@@ -322,7 +322,7 @@ class HarmonicRLAgent(RLAgent):
     This agent is designed for environments with continuous rewards.
     """
 
-    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.1, ):
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.3 ):
         super().__init__(
             name, action_space, learning_rate,  exploration_rate, with_rho_trick, rho_learning_rate
         )
@@ -351,25 +351,21 @@ class HarmonicRLAgent(RLAgent):
         self.q_table[state][action] += self.learning_rate * delta
        
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
-            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward + 0.001))   ## EMA of reciprocals
+            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward))   ## EMA of reciprocals
             self.rho = 1/self.reciprocal_rho ## transforms to harmonic mean
             self.total_time += time
             self.total_reward += reward
         print(f"reciprocal: {self.reciprocal_rho}, rho: {self.rho}, moving: {self.total_reward/self.total_time}, last d, r,t: {delta, reward, time}", file=sys.stderr)
 
-class HarmonicLAgent(RLAgent):
+class HarmonicQAgent(QLearningAgent):
     """
     Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
     This agent is designed for environments with continuous rewards.
     """
 
-    def __init__(self, name: str, action_space=None, learning_rate=0.2, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.03, ):
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, discount_factor = 0.99, exploration_rate=0.1, ):
         super().__init__(
-            name, action_space, learning_rate,  exploration_rate, with_rho_trick, rho_learning_rate
-        )
-        self.reciprocal_rho = 0.0
-        self.total_time =0
-        self.total_reward = 0
+            name, action_space, learning_rate, discount_factor, exploration_rate, )
 
     def learn(self, state, action, reward, next_state, time):
         """
@@ -379,11 +375,15 @@ class HarmonicLAgent(RLAgent):
         if next_state not in self.q_table:
             self.q_table[next_state] = {action: 0 for action in self.action_space}
 
-        self.total_time += time
-        self.total_reward += reward
-
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
+
+        df = math.exp(
+            -self._lambda * time * self.discount_factor
+        )  # Discount factor for continuous learning
+
+        td_target = reward + df * self.q_table[next_state][best_next_action]
+        td_error = td_target - self.q_table[state][action]
 
         delta = (
             reward
@@ -392,14 +392,16 @@ class HarmonicLAgent(RLAgent):
             - self.q_table[state][action]
         )
 
+        # Update Q-value
+        self.q_table[state][action] += self.learning_rate * td_error 
+
         self.q_table[state][action] += self.learning_rate * delta
        
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
             self.reciprocal_rho += self.rho_learning_rate * (delta / time)   ## EMA of reciprocals
             self.rho = 1/self.reciprocal_rho ## transforms to harmonic mean
 
-
-
+      
 
 class ContinuesMAB(Agent):
     """

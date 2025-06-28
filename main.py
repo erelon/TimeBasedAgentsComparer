@@ -80,6 +80,7 @@ def experiment_runner(env, name="Experiment"):
     harmonic_agent_without_trick = HarmonicRLAgent(name="harmonic (update always)",
                                             action_space=env.get_action_space(), with_rho_trick=False)
 
+    harmonicq_agent = HarmonicQAgent(name="harmonic Q", action_space=env.get_action_space())
 
 
     agents = [
@@ -87,13 +88,14 @@ def experiment_runner(env, name="Experiment"):
         # random_agent,
         # ucb,
         # continuosUCB,
-        # q_agent,
-        # continuousQ_agent,
+        q_agent,
+        continuousQ_agent,
+        # harmonicq_agent,
         # r_agent_with_trick,
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,
-        smart_r_agent_with_trick,
+        # smart_r_agent_with_trick,
         # smart_r_agent_without_trick,
         harmonic_agent_with_trick,
         harmonic_agent_without_trick,

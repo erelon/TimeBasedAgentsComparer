@@ -87,22 +87,22 @@ class StatelessEnv(AbstractEnvironment):
         Get the interval duration and reward for the given action.
         action 0 is supposed to be better (higher reward)
         """
-        # Roll for time
+        # Roll for interval duration
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
 
         if action == 1:
-            time = self.rng.normalvariate(T * 0.6, 2)
+            reward = self.rng.normalvariate(T * 0.6, 2)
         elif action == 0:
-            time = self.rng.normalvariate(T * 0.4, 2)
+            reward = self.rng.normalvariate(T * 0.4, 2)
         else:
             raise
 
-        # make sure time is positive
-        time = max(0, time)
-        time = min(T, time)
+        # make sure reward is positive
+        reward = max(self.interval_min_len, reward)
+        reward = min(T, reward)
 
         self.update_state()
-        return T, time
+        return T, reward
 
 
 class TwoStatesEvenDistEnv(AbstractEnvironment):
@@ -131,21 +131,21 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
         if self.state == 0:
             if action == 0:
-                time = self.rng.normalvariate(T * 0.6, 2)
+                reward = self.rng.normalvariate(T * 0.6, 2)
             elif action == 1:
-                time = self.rng.normalvariate(T * 0.55, 2)
+                reward = self.rng.normalvariate(T * 0.55, 2)
         else:  # state 1
             if action == 0:
-                time = self.rng.normalvariate(T * 0.45, 2)
+                reward = self.rng.normalvariate(T * 0.45, 2)
             elif action == 1:
-                time = self.rng.normalvariate(T * 0.5, 2)
+                reward = self.rng.normalvariate(T * 0.5, 2)
 
-        # make sure time is positive
-        time = max(0, time)
-        time = min(T, time)
+        # make sure reward is positive
+        reward = max(self.interval_min_len, reward)
+        reward = min(T, reward)
 
         self.update_state(action)
-        return T, time
+        return T, reward
 
     def secret(self):
         """
@@ -168,7 +168,7 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
         In this environment, we can switch between two states.
         """
         if self.state == 0:
-            self.state = 1 if self.rng.random() < 0.1 else 0
+            self.state = 1 if self.rng.random() < 0.2 else 0
 
         elif self.state == 1 and action == 0:
             self.state = 0 if self.rng.random() < 0.2 else 1
@@ -186,21 +186,21 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
 
         if self.state == 0:
             if action == 0:
-                time = self.rng.normalvariate(T * 0.7, 2)
+                reward = self.rng.normalvariate(T * 0.6, 2)
             elif action == 1:
-                time = self.rng.normalvariate(T * 0.5, 2)
+                reward = self.rng.normalvariate(T * 0.5, 2)
         else:  # state 1
             if action == 0:
-                time = self.rng.normalvariate(T * 0.5, 2)
+                reward = self.rng.normalvariate(T * 0.5, 2)
             elif action == 1:
-                time = self.rng.normalvariate(T * 0.1, 2)
+                reward = self.rng.normalvariate(T * 0.2, 2)
 
-        # make sure time is positive
-        time = max(0, time)
-        time = min(T, time)
+        # make sure reward is positive
+        reward = max(self.interval_min_len, reward)
+        reward = min(T, reward)
 
         self.update_state(action)
-        return T, time
+        return T, reward
 
     def secret(self):
         """
