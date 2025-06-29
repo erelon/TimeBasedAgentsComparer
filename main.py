@@ -85,7 +85,7 @@ def experiment_runner(env, name="Experiment"):
 
     agents = [
         orcale,
-        # random_agent,
+        random_agent,
         # ucb,
         # continuosUCB,
         q_agent,
@@ -93,15 +93,15 @@ def experiment_runner(env, name="Experiment"):
         harmonicq_agent,
         # r_agent_with_trick,
         # continuous_r_agent_with_trick,
-        # r_agent_without_trick,
-        # continuous_r_agent_without_trick,
+        r_agent_without_trick,
+        continuous_r_agent_without_trick,
         # smart_r_agent_with_trick,
-        # smart_r_agent_without_trick,
+        smart_r_agent_without_trick,
         # harmonic_agent_with_trick,
-        # harmonic_agent_without_trick,
+        harmonic_agent_without_trick,
     ]
 
-    episodes = 2000
+    episodes = 5000
     eval_steps = 100
     epochs =50 
     results = defaultdict(dict)

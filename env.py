@@ -186,14 +186,14 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
 
         if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.6, 2)
+                reward = self.rng.normalvariate(T * 0.8, 2)
             elif action == 1:
                 reward = self.rng.normalvariate(T * 0.5, 2)
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.5, 2)
+                reward = self.rng.normalvariate(T * 0.3, 2)
             elif action == 1:
-                reward = self.rng.normalvariate(T * 0.2, 2)
+                reward = self.rng.normalvariate(T * 0.1, 2)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
