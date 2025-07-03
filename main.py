@@ -36,7 +36,7 @@ def experiment_runner(env, name="Experiment"):
     print(f"Running experiment with env: {name}")
     orcale = OracleAgent(
         name="Oracle Agent",
-        action_space=env.get_action_space(),
+  action_space=env.get_action_space(),
         env_secret=env.secret(),
     )
 
@@ -82,23 +82,27 @@ def experiment_runner(env, name="Experiment"):
 
     harmonicq_agent = HarmonicQAgent(name="harmonic Q", action_space=env.get_action_space())
 
+    myopic_agent_without =MyopicRLearn(name="myopic R", action_space=env.get_action_space(), with_rho_trick=False)
+    myopic_agent_with =MyopicRLearn(name="myopic R (upd on policy)", action_space=env.get_action_space())
 
     agents = [
         orcale,
-        random_agent,
+        # random_agent,
         # ucb,
         # continuosUCB,
-        q_agent,
-        continuousQ_agent,
-        harmonicq_agent,
+        # q_agent,
+        # continuousQ_agent,
+        # harmonicq_agent,
         # r_agent_with_trick,
         # continuous_r_agent_with_trick,
-        r_agent_without_trick,
-        continuous_r_agent_without_trick,
+        # r_agent_without_trick,
+        # continuous_r_agent_without_trick,
         # smart_r_agent_with_trick,
         smart_r_agent_without_trick,
-        # harmonic_agent_with_trick,
+        harmonic_agent_with_trick,
         harmonic_agent_without_trick,
+        myopic_agent_with,
+        myopic_agent_without,
     ]
 
     episodes = 5000

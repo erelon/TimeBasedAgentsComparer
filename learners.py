@@ -298,6 +298,42 @@ class ContinuousRLAgent(RLAgent):
             self.rho += self.rho_learning_rate * (delta/time) 
 
 
+class MyopicRLearn(RLAgent):
+    """
+    Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
+    This agent is designed for environments with continuous rewards.
+    """
+
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.3 ):
+        super().__init__(
+            name, action_space, learning_rate,  exploration_rate, with_rho_trick, rho_learning_rate
+        )
+        # self.total_time = 0
+        # self.total_reward = 0
+
+    def learn(self, state, action, reward, next_state, time):
+        """
+        Update the agent's knowledge based on the action taken and the reward received.
+        This method is adapted for continuous rewards.
+        """
+        if next_state not in self.q_table:
+            self.q_table[next_state] = {action: 0 for action in self.action_space}
+
+        # best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
+        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
+
+        delta = (
+            reward
+            - self.rho
+        )
+
+        self.q_table[state][action] = self.learning_rate * delta + (1-self.learning_rate)*self.q_table[state][action] 
+       
+        if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
+            self.rho =(1-self.rho_learning_rate)*self.rho + self.rho_learning_rate*reward 
+            # self.total_time += time
+            # self.total_reward += reward
+
 class HarmonicRLAgent(RLAgent):
     """
     Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
@@ -627,15 +663,7 @@ class SMARTRLAgent(RLAgent):
     This agent is designed for environments with continuous rewards.
     """
 
-    def __init__(
-        self,
-        name: str,
-        action_space=None,
-        learning_rate=0.1,
-	exploration_rate=0.1,
-	with_rho_trick=True,
-        rho_learning_rate=0.03,
-    ):
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.03,):
         super().__init__(
             name, action_space, learning_rate,  exploration_rate, with_rho_trick, rho_learning_rate
         )
