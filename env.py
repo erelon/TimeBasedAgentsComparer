@@ -6,17 +6,15 @@ import random
 
 
 class AbstractEnvironment:
-    def __init__(self, name: str, seed: int = None):
+    def __init__(self, name: str, seed: int = 42):
         self.name = name
         self.action_space = None
+
         # we want to make sure the random seed is set for reproducibility
-        self.seed = seed if seed is not None else 42
-        self.rng = random.Random(
-            seed if seed is not None else 42
-        )  # Initialize the random seed
 
         self.interval_min_len = 1
         self.interval_max_len = 500
+        self.set_seed(seed)
         self.reset()
 
     def reset(self):
@@ -24,14 +22,15 @@ class AbstractEnvironment:
         Reset the environment to its initial state.
         """
         # we need to reset the random seed for reproducibility
+        self.rng = random.Random(self.seed)  # Initialize the random seed
         self.rng.seed(self.seed)
+        self.state = 0
 
     def set_seed(self, seed: int):
         """
         Set the random seed for the environment.
         """
         self.seed = seed
-        self.reset()
 
     def get_name(self) -> str:
         return self.name
@@ -81,6 +80,7 @@ class StatelessEnv(AbstractEnvironment):
 
     def __init__(self, name: str):
         super().__init__(name)
+        self.action_space = [0, 1]  # Two actions: 0 and 1
 
     def get_reward(self, agent, action):
         """
@@ -91,9 +91,9 @@ class StatelessEnv(AbstractEnvironment):
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
 
         if action == 1:
-            reward = self.rng.normalvariate(T * 0.6, 2)
+            reward = self.rng.normalvariate(T * 0.55, 100)
         elif action == 0:
-            reward = self.rng.normalvariate(T * 0.4, 2)
+            reward = self.rng.normalvariate(T * 0.6, 100)
         else:
             raise
 
@@ -105,6 +105,12 @@ class StatelessEnv(AbstractEnvironment):
         return T, reward
 
 
+    def update_state(self, action=None):
+        self.state = 0  # In a stateless environment, the state is always 0
+
+    def secret(self):
+        return lambda state: 0
+
 class TwoStatesEvenDistEnv(AbstractEnvironment):
     """
     Two states environment with even distribution.
@@ -113,7 +119,6 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
     def __init__(self, name: str):
         super().__init__(name)
         self.action_space = [0, 1]
-        self.state = 0
 
     def update_state(self, action):
         """
@@ -131,14 +136,14 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
         if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.6, 2)
+                reward = self.rng.normalvariate(T * 0.8, 10)
             elif action == 1:
-                reward = self.rng.normalvariate(T * 0.55, 2)
+                reward = self.rng.normalvariate(T * 0.55, 10)
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.45, 2)
+                reward = self.rng.normalvariate(T * 0.45, 10)
             elif action == 1:
-                reward = self.rng.normalvariate(T * 0.5, 2)
+                reward = self.rng.normalvariate(T * 0.6, 10)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
@@ -157,10 +162,11 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
 
 
 class TwoStatesUnevenDistEnv(AbstractEnvironment):
-    def __init__(self, name: str):
+    def __init__(self, name: str, _maxp=0.8, _maxv=10):
         super().__init__(name)
         self.action_space = [0, 1]
-        self.state = 0
+        self.maxp=_maxp
+        self.maxv=_maxv
 
     def update_state(self, action):
         """
@@ -180,20 +186,20 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
         """
         Get the interval duration and reward for the given action.
         action 0 is supposed to be better (higher reward) for state 0
-        action 1 is supposed to be better (higher reward) for state 1
+        action 1 is supposed to be better for state 1: lower reward, but leads back to state 0 which is much better
         """
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
 
         if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.8, 2)
+                reward = self.rng.normalvariate(T * self.maxp, self.maxv) # 0.8
             elif action == 1:
-                reward = self.rng.normalvariate(T * 0.5, 2)
+                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) # 0.5
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.3, 2)
+                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv) # 0.3
             elif action == 1:
-                reward = self.rng.normalvariate(T * 0.1, 2)
+                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) # 0.1  ## <<< this is the better hand: pays little, but leads to better state
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
@@ -205,7 +211,21 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
     def secret(self):
         """
         A helper method to load an oracle for the environment.
-        In this environment, we can return a fixed oracle that always returns action 0.
+        In this environment, we return 0 for state 0, action 1 for state 1.
         :return:
         """
-        return lambda state: 0 if state == 0 else 1
+        return lambda state: 0 if state == 0 else 1 
+
+class Uneven_wide(TwoStatesUnevenDistEnv):
+
+    def __init__(self, name: str):
+        super().__init__(name, _maxp=0.6, )
+
+
+class Uneven_narrow(TwoStatesUnevenDistEnv):
+
+    def __init__(self, name: str):
+        super().__init__(name, _maxp=0.2, )
+
+
+

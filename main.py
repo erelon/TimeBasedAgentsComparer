@@ -11,7 +11,6 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
     """
     Train the agent in the given environment for a specified number of episodes.
     """
-    random.seed(seed)
     env.set_seed(seed)
     env.reset()
     state = env.get_state()  # In a stateless environment, state is not used
@@ -22,11 +21,13 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
         agent.learn(state, action, reward, new_state, time)
         state = new_state
 
+    env.set_seed(seed+1)
+    env.reset()
     rewards = []
     for _ in range(eval_steps):
+        state = env.get_state()
         action = agent.eval(state)
         time, reward = env.get_reward(agent, action)
-        state = env.get_state()
         rewards.append(reward)
 
     return sum(rewards) / len(rewards)
@@ -34,11 +35,8 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
 
 def experiment_runner(env, name="Experiment"):
     print(f"Running experiment with env: {name}")
-    orcale = OracleAgent(
-        name="Oracle Agent",
-  action_space=env.get_action_space(),
-        env_secret=env.secret(),
-    )
+
+    oracle = OracleAgent(name="Oracle Agent",  action_space=env.get_action_space(), env_secret=env.secret(),   )
 
     q_agent = QLearningAgent(name="QLearning", action_space=env.get_action_space())
     continuousQ_agent = ContinuousQLearningAgent(
@@ -85,9 +83,13 @@ def experiment_runner(env, name="Experiment"):
     myopic_agent_without =MyopicRLearn(name="myopic R", action_space=env.get_action_space(), with_rho_trick=False)
     myopic_agent_with =MyopicRLearn(name="myopic R (upd on policy)", action_space=env.get_action_space())
 
+    statesmart_agent_with = StateSMARTRLAgent(name="State SMART (update on policy)", action_space=env.get_action_space())
+    statesmart_agent_without = StateSMARTRLAgent(name="State SMART (update always)", action_space=env.get_action_space(), with_rho_trick=False)
+
+    print("Got here")
     agents = [
-        orcale,
-        # random_agent,
+        oracle,
+        random_agent,
         # ucb,
         # continuosUCB,
         # q_agent,
@@ -97,16 +99,18 @@ def experiment_runner(env, name="Experiment"):
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,
-        # smart_r_agent_with_trick,
-        smart_r_agent_without_trick,
+        smart_r_agent_with_trick,
+        # smart_r_agent_without_trick,
         harmonic_agent_with_trick,
-        harmonic_agent_without_trick,
-        myopic_agent_with,
-        myopic_agent_without,
+        # harmonic_agent_without_trick,
+        # myopic_agent_with,
+        # myopic_agent_without,
+        statesmart_agent_with,
+        statesmart_agent_without,
     ]
 
     episodes = 5000
-    eval_steps = 100
+    eval_steps = 1000
     epochs =50 
     results = defaultdict(dict)
     for agent in agents:
@@ -133,7 +137,7 @@ def experiment_runner(env, name="Experiment"):
         print(f"Best action ratio for {agent.name}:")
         for state, actions in best_action_per_state.items():
             best_action_ratio = len(
-                [i for i in actions if i == orcale.act(state)]
+                [i for i in actions if i == oracle.act(state)]
             ) / len(actions)
             print(f"State {state}: Best Action Ratio: {best_action_ratio}")
             results[agent.name][f"State {state} Best Action Ratio"] = best_action_ratio
@@ -155,14 +159,17 @@ def experiment_runner(env, name="Experiment"):
 if __name__ == "__main__":
     stateless_env = StatelessEnv("Stateless Environment")
     two_state_ed_env = TwoStatesEvenDistEnv("Two States Even Distribution Environment")
-    two_state_ued_env = TwoStatesUnevenDistEnv(
-        "Two States Uneven Distribution Environment"
-    )
-
+    two_state_ued_wide = Uneven_wide("Two States Uneven Distribution (wide range)")
+    two_state_ued_narrow = Uneven_narrow("Two States Uneven Distribution (narrow range)")
+ 
     # Run experiments for each environment
     # experiment_runner(stateless_env, name="Stateless Environment Experiment")
 
     # experiment_runner(two_state_ed_env, name="Two States Even Distribution Environment Experiment")
-    experiment_runner(
-        two_state_ued_env, name="Two States Uneven Distribution Environment Experiment"
-    )
+    # env =  stateless_env
+    # env =   two_state_ed_env
+    # env =   two_state_ued_wide
+    env =   two_state_ued_narrow
+
+    experiment_runner(env, name=env.name+" Experiment")
+

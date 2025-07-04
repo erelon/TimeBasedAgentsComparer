@@ -4,6 +4,8 @@ import sys
 
 # Learning parameters are set in indivual learner's constructors
 
+MAX_REWARDS = 1000000
+
 class Agent:
     """
     Base class for all rl agents in the system.
@@ -12,7 +14,10 @@ class Agent:
     def __init__(self, name: str, action_space=None, **kwargs):
         self.name = name
         self.q_table = {}
-        self.action_space = action_space if action_space is not None else []
+        if action_space is None:
+            raise ValueError("Action space must be provided for the agent.")
+
+        self.action_space = action_space
 
     def __repr__(self):
         return f"Agent(name={self.name})"
@@ -119,7 +124,9 @@ class QLearningAgent(Agent):
         Choose an action based on the current state using an epsilon-greedy strategy.
         """
         if state not in self.q_table:
-            self.q_table[state] = {action: 500 for action in self.action_space}
+            self.q_table[state] = {action: MAX_REWARDS for action in self.action_space}
+
+        # print(f"Act {self.q_table.items()}", file=sys.stderr)
 
         if random.random() < self.exploration_rate:
             return random.choice(self.action_space)  # Explore
@@ -138,11 +145,11 @@ class QLearningAgent(Agent):
         Only exploit the knowledge of the agent.
         """
         if state not in self.q_table:
-            self.q_table[state] = {action: 500 for action in self.action_space}
+            self.q_table[state] = {action: MAX_REWARDS for action in self.action_space}
 
-        if self.first_report:
-            self.first_report = False
-            print(f"Eval {self.q_table.items()}")
+        # if self.first_report:
+            # self.first_report = False
+            # print(f"Eval {self.q_table.items()}")
 
 
         return max(self.q_table[state], key=self.q_table[state].get)
@@ -152,7 +159,7 @@ class QLearningAgent(Agent):
         Update the Q-value based on the action taken and the reward received.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 500 for action in self.action_space}
+            self.q_table[next_state] = {action: MAX_REWARDS for action in self.action_space}
 
         best_next_action = max(
             self.q_table[next_state], key=self.q_table[next_state].get
@@ -183,7 +190,7 @@ class ContinuousQLearningAgent(QLearningAgent):
         This method is adapted for continuous action spaces.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 0 for action in self.action_space}
+            self.q_table[next_state] = {action: MAX_REWARDS for action in self.action_space}
 
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         
@@ -237,12 +244,10 @@ class RLAgent(QLearningAgent):
         Update the agent's knowledge based on the action taken and the reward received.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 500 for action in self.action_space}
+            self.q_table[next_state] = {action: 0 for action in self.action_space}
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
-        best_next_action = max(
-            self.q_table[next_state], key=self.q_table[next_state].get
-        )
+        best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         delta = (
             reward
             - self.rho
@@ -277,7 +282,7 @@ class ContinuousRLAgent(RLAgent):
         This method is adapted for continuous rewards.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 0 for action in self.action_space}
+            self.q_table[next_state] = {action: 0  for action in self.action_space}
 
         self.total_time += time
         self.total_reward += reward
@@ -370,6 +375,7 @@ class HarmonicRLAgent(RLAgent):
        
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
             self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward))   ## EMA of reciprocals
+            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (delta))   ## EMA of reciprocals
             self.rho = 1/self.reciprocal_rho ## transforms to harmonic mean
             self.total_time += time
             self.total_reward += reward
@@ -390,7 +396,7 @@ class HarmonicQAgent(QLearningAgent):
         Choose an action based on the current state using an epsilon-greedy strategy.
         """
         if state not in self.q_table:
-            self.q_table[state] = {action: 500 for action in self.action_space}
+            self.q_table[state] = {action: MAX_REWARDS for action in self.action_space}
             self.rq_table[state] = {action: 1.0 for action in self.action_space}
 
 
@@ -412,7 +418,7 @@ class HarmonicQAgent(QLearningAgent):
         Update the Q-value based on the action taken and the reward received.
         """
         if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 500 for action in self.action_space}
+            self.q_table[next_state] = {action: MAX_REWARDS for action in self.action_space}
             self.rq_table[next_state] = {action: 1.0 for action in self.action_space}
 
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
@@ -545,7 +551,7 @@ class UCB(Agent):
     Upper Confidence Bound (UCB) agent that learns from the rewards.
     """
 
-    def __init__(self, name: str, action_space=None, exploration_constant=2.0, **kwargs):
+    def __init__(self, name: str, action_space=None, exploration_constant=1.0, **kwargs):
         super().__init__(name, action_space, **kwargs)
         self.exploration_constant = exploration_constant
         self.total_steps = {}
@@ -564,13 +570,13 @@ class UCB(Agent):
         Choose an action based on the current state using UCB strategy.
         """
         if state not in self.q_table:
-            self.q_table[state] = {action: 0 for action in self.action_space}
+            self.q_table[state] = {action: 0.000000000001 for action in self.action_space}
         if state not in self.total_steps:
             self.total_steps[state] = {action: 1 for action in self.action_space}
-            self.total_reward[state] = {action: 0 for action in self.action_space}
+            self.total_reward[state] = {action: 0.000000000001 for action in self.action_space}
 
         ucb_values = {action: (self.q_table[state][action] +
-                               self.exploration_constant * math.sqrt((math.log(sum(self.total_steps[state].values())) /
+                               self.exploration_constant * math.sqrt(2*(math.log(sum(self.total_steps[state].values())) /
                                                                        (self.total_steps[state][action]))))
                        for action in self.action_space}
 
@@ -588,27 +594,27 @@ class UCB(Agent):
         """
         if state not in self.q_table:
             self.q_table[state] = {action: 0 for action in self.action_space}
+
         if state not in self.total_steps:
             self.total_steps[state] = {action: 0 for action in self.action_space}
             self.total_reward[state] = {action: 0 for action in self.action_space}
 
         self.total_steps[state][action] += 1
         self.total_reward[state][action] += reward
-        if self.total_steps[state][action] == 0:
-            return
+        # if self.total_steps[state][action] == 0:
+            # return
         self.q_table[state][action] = self.total_reward[state][action] / self.total_steps[state][action]
 
 
 class ContinuosUCB(Agent):
     """
-    Continuous Upper Confidence Bound (UCB) agent that learns from continuous rewards.
+    Continuous Upper Confidence Bound (UCB) agent that learns from rewards that change with time.
     """
 
-    def __init__(self, name: str, action_space=None, exploration_constant=2.0, **kwargs):
+    def __init__(self, name: str, action_space=None, exploration_constant=1.0, **kwargs):
         super().__init__(name, action_space, **kwargs)
         self.exploration_constant = exploration_constant
-        self.total_time = {}
-        self.total_reward = {}
+        self.reset()
 
     def reset(self):
         """
@@ -617,20 +623,22 @@ class ContinuosUCB(Agent):
         self.q_table = {}
         self.total_time = {}
         self.total_reward = {}
+        self.total_count = {}
 
     def act(self, state):
         """
         Choose an action based on the current state using UCB strategy.
         """
         if state not in self.q_table:
-            self.q_table[state] = {action: 0 for action in self.action_space}
+            self.q_table[state] = {action: 0.000001 for action in self.action_space}
         if state not in self.total_time:
-            self.total_time[state] = {action: 1 for action in self.action_space}
+            self.total_time[state] = {action: 0.000000000001 for action in self.action_space}
+            self.total_count[state] = {action: 1 for action in self.action_space}
             self.total_reward[state] = {action: 0 for action in self.action_space}
 
-        ucb_values = {action: (self.q_table[state][action] +
-                               self.exploration_constant * math.sqrt((math.log(sum(self.total_time[state].values())) /
-                                                                       (self.total_time[state][action]))))
+        ucb_values = {action: (self.q_table[state][action] + 
+                               self.exploration_constant * math.sqrt(2*(math.log(sum(self.total_count[state].values())) /
+                                                                       (self.total_count[state][action]))))
                        for action in self.action_space}
 
         return max(ucb_values, key=ucb_values.get)  # Exploit with UCB
@@ -650,11 +658,12 @@ class ContinuosUCB(Agent):
         if state not in self.total_time:
             self.total_time[state] = {action: 0 for action in self.action_space}
             self.total_reward[state] = {action: 0 for action in self.action_space}
+            self.total_count[state]  = {action: 1 for action in self.action_space} 
 
         self.total_time[state][action] += time
         self.total_reward[state][action] += reward
-        if self.total_time[state][action] == 0:
-            return
+        # if self.total_time[state][action] == 0:
+            # return
         self.q_table[state][action] = self.total_reward[state][action] / self.total_time[state][action]
 
 class SMARTRLAgent(RLAgent):
@@ -677,6 +686,8 @@ class SMARTRLAgent(RLAgent):
         """
         if next_state not in self.q_table:
             self.q_table[next_state] = {action: 0 for action in self.action_space}
+        if state not in self.q_table:
+            self.q_table[state] = {action: 0 for action in self.action_space}
 
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
@@ -695,4 +706,56 @@ class SMARTRLAgent(RLAgent):
             self.total_time += time
             self.total_reward += reward
             self.rho = self.total_reward / self.total_time
+
+
+class StateSMARTRLAgent(RLAgent):
+    """
+    Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
+    This agent is designed for environments with continuous rewards.
+    """
+
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.03,):
+        super().__init__(
+            name, action_space, learning_rate,  exploration_rate, with_rho_trick, rho_learning_rate
+        )
+        self.total_time = 0
+        self.total_reward = 0
+        self.time = {}
+        self.reward = {}
+
+    def learn(self, state, action, reward, next_state, time):
+        """
+        Update the agent's knowledge based on the action taken and the reward received.
+        This method is adapted for continuous rewards.
+        """
+        if next_state not in self.q_table:
+            self.q_table[next_state] = {action: reward for action in self.action_space}
+        if next_state not in self.time:
+            self.time[next_state] = 0
+            self.reward[next_state] = 0
+        if state not in self.q_table:
+            self.q_table[state] = {action: reward for action in self.action_space}
+
+        if state not in self.time:
+            self.time[state] =  0
+            self.reward[state] = 0
+
+        best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
+        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
+
+        rho = (self.reward[state] / self.time[state]) if self.time[state]!=0 else 1 # (reward/time)
+
+        delta = (reward - rho*time )
+
+        new_q_state = delta + self.q_table[next_state][best_next_action]
+
+        self.q_table[state][action] += self.learning_rate * (new_q_state - self.q_table[state][action])
+       
+        if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
+            self.reward[state] += reward
+            self.time[state] += time
+            self.total_time += time
+            self.total_reward += reward
+            self.rho = self.total_reward / self.total_time
+            # print(f"Rho: {self.rho}, state {state} rho {rho}", file=sys.stderr)
 
