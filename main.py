@@ -92,9 +92,9 @@ def experiment_runner(env, name="Experiment"):
         random_agent,
         # ucb,
         # continuosUCB,
-        # q_agent,
-        # continuousQ_agent,
-        # harmonicq_agent,
+         q_agent,
+         continuousQ_agent,
+         harmonicq_agent,
         # r_agent_with_trick,
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     # experiment_runner(two_state_ed_env, name="Two States Even Distribution Environment Experiment")
     # env =  stateless_env
     # env =   two_state_ed_env
-    # env =   two_state_ued_wide
-    env =   two_state_ued_narrow
+    env =   two_state_ued_wide
+    # env =   two_state_ued_narrow
 
     experiment_runner(env, name=env.name+" Experiment")
 
