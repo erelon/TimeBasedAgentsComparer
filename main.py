@@ -86,14 +86,17 @@ def experiment_runner(env, name="Experiment"):
     statesmart_agent_with = StateSMARTRLAgent(name="State SMART (update on policy)", action_space=env.get_action_space())
     statesmart_agent_without = StateSMARTRLAgent(name="State SMART (update always)", action_space=env.get_action_space(), with_rho_trick=False)
 
+    harmonic2_with = HarmonicRLAgent2(name="Harmonic2 (update on policy)", action_space=env.get_action_space())
+    harmonic2_without = HarmonicRLAgent2(name="Harmonic2 (update always)", action_space=env.get_action_space(), with_rho_trick=False)
+
     print("Got here")
     agents = [
         oracle,
         random_agent,
         # ucb,
         # continuosUCB,
-         q_agent,
-         continuousQ_agent,
+         # q_agent,
+         # continuousQ_agent,
          harmonicq_agent,
         # r_agent_with_trick,
         # continuous_r_agent_with_trick,
@@ -105,12 +108,14 @@ def experiment_runner(env, name="Experiment"):
         # harmonic_agent_without_trick,
         # myopic_agent_with,
         # myopic_agent_without,
-        statesmart_agent_with,
-        statesmart_agent_without,
+        # statesmart_agent_with,
+        # statesmart_agent_without,
+        harmonic2_with,
+        harmonic2_without,
     ]
 
     episodes = 5000
-    eval_steps = 1000
+    eval_steps = 200
     epochs =50 
     results = defaultdict(dict)
     for agent in agents:

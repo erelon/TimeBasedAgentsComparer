@@ -162,7 +162,7 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
 
 
 class TwoStatesUnevenDistEnv(AbstractEnvironment):
-    def __init__(self, name: str, _maxp=0.8, _maxv=10):
+    def __init__(self, name: str, _maxp=0.8, _maxv=5):
         super().__init__(name)
         self.action_space = [0, 1]
         self.maxp=_maxp
