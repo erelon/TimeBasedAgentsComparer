@@ -136,14 +136,14 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
         if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.8, 10)
+                reward = 1+self.interval_min_len # self.rng.normalvariate(T * 0.2, 2)
             elif action == 1:
-                reward = self.rng.normalvariate(T * 0.55, 10)
+                reward = self.interval_min_len # self.rng.normalvariate(T * 0.19, 2) # 0.55
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * 0.45, 10)
+                reward = self.interval_min_len # self.rng.normalvariate(T * 0.19, 2)
             elif action == 1:
-                reward = self.rng.normalvariate(T * 0.6, 10)
+                reward = 1+self.interval_min_len # self.rng.normalvariate(T * 0.2, 2)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
