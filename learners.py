@@ -255,7 +255,7 @@ class RLAgent(QLearningAgent):
             - self.q_table[state][action]
         )
 
-        self.q_table[state][action] += self.learning_rate * delta
+        self.q_table[state][action] += self.learning_rate * delta # q = (1-learning)*q + learning*(reward - rho + q_next)
         
 
         # if not self.with_rho_trick or (self.with_rho_trick and (self.q_table[state][action] == self.q_table[state][best_current_action])):
