@@ -1,5 +1,8 @@
 import random
 
+import numpy as np
+
+
 # All common env parameters are set in AbstractEnvironment __init__
 # in particular:
 #  interval min and max durations
@@ -104,12 +107,12 @@ class StatelessEnv(AbstractEnvironment):
         self.update_state()
         return T, reward
 
-
     def update_state(self, action=None):
         self.state = 0  # In a stateless environment, the state is always 0
 
     def secret(self):
         return lambda state: 0
+
 
 class TwoStatesEvenDistEnv(AbstractEnvironment):
     """
@@ -165,8 +168,8 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
     def __init__(self, name: str, _maxp=0.8, _maxv=5):
         super().__init__(name)
         self.action_space = [0, 1]
-        self.maxp=_maxp
-        self.maxv=_maxv
+        self.maxp = _maxp
+        self.maxv = _maxv
 
     def update_state(self, action):
         """
@@ -192,14 +195,15 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
 
         if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * self.maxp, self.maxv) # 0.8
+                reward = self.rng.normalvariate(T * self.maxp, self.maxv)  # 0.8
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) # 0.5
+                reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)  # 0.5
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv) # 0.3
+                reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)  # 0.3
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) # 0.1  ## <<< this is the better hand: pays little, but leads to better state
+                reward = self.rng.normalvariate(T * (self.maxp / 3.0),
+                                                self.maxv)  # 0.1  ## <<< this is the better hand: pays little, but leads to better state
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
@@ -214,7 +218,8 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
         In this environment, we return 0 for state 0, action 1 for state 1.
         :return:
         """
-        return lambda state: 0 if state == 0 else 1 
+        return lambda state: 0 if state == 0 else 1
+
 
 class Uneven_wide(TwoStatesUnevenDistEnv):
 
@@ -228,4 +233,46 @@ class Uneven_narrow(TwoStatesUnevenDistEnv):
         super().__init__(name, _maxp=0.2, )
 
 
+class TwoStatesUnevenDistSinEnv(TwoStatesUnevenDistEnv):
+    def __init__(self, name: str):
+        super().__init__(name)
+        sin_length = 50
+        self.sin_state_1 = 0.5 + (1 + np.sin(np.linspace(0, 2 * np.pi, sin_length))) / 8
+        self.sin_state_2 = 0.1 + (1 + np.sin(np.linspace(0, 2 * np.pi, sin_length))) / 10
+        self.sin_iter = 0
 
+    def get_reward(self, agent, action):
+        """
+        Get the interval duration and reward for the given action.
+        action 0 is supposed to be better (higher reward) for state 0
+        action 1 is supposed to be better (higher reward) for state 1
+        """
+        T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
+
+        sin1 = self.sin_state_1[self.sin_iter % len(self.sin_state_1)]
+        Nsin1 = self.sin_state_1[int((self.sin_iter + len(self.sin_state_1) / 2) % len(self.sin_state_1))]
+
+        sin2 = self.sin_state_2[self.sin_iter % len(self.sin_state_2)]
+        Nsin2 = self.sin_state_2[int((self.sin_iter + len(self.sin_state_2) / 2) % len(self.sin_state_2))]
+
+        if self.state == 0:
+            if action == 0:
+                reward = self.rng.normalvariate(T * sin1, 2)
+            elif action == 1:
+                reward = self.rng.normalvariate(T * Nsin1, 2)
+        else:  # state 1
+            if action == 0:
+                reward = self.rng.normalvariate(T * sin2, 2)
+            elif action == 1:
+                reward = self.rng.normalvariate(T * Nsin2, 2)
+
+        # make sure reward is positive
+        reward = max(self.interval_min_len, reward)
+        reward = min(T, reward)
+
+        self.update_state(action)
+        return T, reward
+
+    def update_state(self, action):
+        super().update_state(action)
+        self.sin_iter += 1
