@@ -166,7 +166,7 @@ if __name__ == "__main__":
     two_state_ed_env = TwoStatesEvenDistEnv("Two States Even Distribution Environment")
     two_state_ued_wide = Uneven_wide("Two States Uneven Distribution (wide range)")
     two_state_ued_narrow = Uneven_narrow("Two States Uneven Distribution (narrow range)")
- 
+    two_state_cyclic = UnevenCycling("Two states cycling, no transition changes") 
     # Run experiments for each environment
     # experiment_runner(stateless_env, name="Stateless Environment Experiment")
 
@@ -175,6 +175,8 @@ if __name__ == "__main__":
     env =   two_state_ed_env
     # env =   two_state_ued_wide
     # env =   two_state_ued_narrow
+
+    env = two_state_cyclic
 
     experiment_runner(env, name=env.name+" Experiment")
 
