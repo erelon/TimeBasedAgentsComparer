@@ -1,5 +1,5 @@
 import math
-import random
+from random import Random
 import sys
 
 # Learning parameters are set in indivual learner's constructors
@@ -12,22 +12,29 @@ class Agent:
     Base class for all rl agents in the system.
     """
 
-    def __init__(self, name: str, action_space=None, **kwargs):
+    def __init__(self, name: str, action_space=None, seed: int = 42, **kwargs):
         self.name = name
         self.q_table = {}
         if action_space is None:
             raise ValueError("Action space must be provided for the agent.")
 
         self.action_space = action_space
+        self.seed = seed
+        self.rng = Random(self.seed)
+        self.rng.seed(self.seed)
 
     def __repr__(self):
         return f"Agent(name={self.name})"
+
+    def set_seed(self, seed):
+        self.seed = seed
 
     def reset(self):
         """
         Reset the agent's knowledge and state.
         """
-        raise NotImplementedError("This method should be overridden by subclasses.")
+        self.rng = Random(self.seed)
+        self.rng.seed(self.seed)
 
     def act(self, state):
         """
@@ -92,13 +99,13 @@ class RandomAgent(Agent):
         """
         Choose a random action from the action space.
         """
-        return random.choice(self.action_space)
+        return self.rng.choice(self.action_space)
 
     def eval(self, state):
         """
         Random agent does not evaluate states.
         """
-        return random.choice(self.action_space)
+        return self.rng.choice(self.action_space)
 
     def learn(self, state, action, reward, next_state, time):
         """
@@ -129,8 +136,8 @@ class QLearningAgent(Agent):
 
         # print(f"Act {self.q_table.items()}", file=sys.stderr)
 
-        if random.random() < self.exploration_rate:
-            return random.choice(self.action_space)  # Explore
+        if self.rng.random() < self.exploration_rate:
+            return self.rng.choice(self.action_space)  # Explore
         else:
             return max(self.q_table[state], key=self.q_table[state].get)  # Exploit
 
@@ -471,8 +478,8 @@ class HarmonicQAgent(QLearningAgent):
             self.q_table[state] = {action: MAX_REWARDS for action in self.action_space}
             self.rq_table[state] = {action: 1.0 for action in self.action_space}
 
-        if random.random() < self.exploration_rate:
-            return random.choice(self.action_space)  # Explore
+        if self.rng.random() < self.exploration_rate:
+            return self.rng.choice(self.action_space)  # Explore
         else:
             return max(self.q_table[state], key=self.q_table[state].get)  # Exploit
 
@@ -527,8 +534,8 @@ class ContinuesMAB(Agent):
         if state not in self.q_table:
             self.q_table[state] = {action: 0 for action in self.action_space}
 
-        if random.random() < self.exploration_rate:
-            return random.choice(self.action_space)  # Explore
+        if self.rng.random() < self.exploration_rate:
+            return self.rng.choice(self.action_space)  # Explore
         else:
             return max(self.q_table[state], key=self.q_table[state].get)  # Exploit
 
@@ -585,8 +592,8 @@ class MAB(Agent):
         if state not in self.q_table:
             self.q_table[state] = {action: 0 for action in self.action_space}
 
-        if random.random() < self.exploration_rate:
-            return random.choice(self.action_space)  # Explore
+        if self.rng.random() < self.exploration_rate:
+            return self.rng.choice(self.action_space)  # Explore
         else:
             return max(self.q_table[state], key=self.q_table[state].get)  # Exploit
 
