@@ -235,7 +235,7 @@ class Uneven_narrow(TwoStatesUnevenDistEnv):
 # ---------- Cycling and shifting environments
 
 class UnevenCycling(TwoStatesUnevenDistEnv):
-    def __init__(self, name: str, _maxp=0.8, _maxv=5, _cycle=50):
+    def __init__(self, name: str, _maxp=0.8, _maxv=5, _cycle=5):
         super().__init__(name, _maxp, _maxv)
         # self.action_space = [0, 1]
         # self.maxp=_maxp
@@ -277,17 +277,17 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
                 if action == 0:
                     reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
                 elif action == 1:
-                    reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)
+                    reward = self.rng.normalvariate(T * (self.maxp / 9.0), self.maxv)
             else:
                 if action == 0:
                     reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
                 elif action == 1:
                     reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
 
-        else:  # state 1
+        else:  # self.cycle_state 1
             if self.state == 0:
                 if action == 0:
-                    reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
+                    reward = self.rng.normalvariate(T * (self.maxp / 9.0), self.maxv)
                 elif action == 1:
                     reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
             else:
@@ -319,7 +319,7 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
             if self.cycle_state == 1 and state == 0:
                 return 1
             if self.cycle_state == 1 and state == 1:
-                return 0
+                return 1 
 
         return secret
 

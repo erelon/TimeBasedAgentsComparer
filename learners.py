@@ -349,56 +349,6 @@ class MyopicRLearn(RLAgent):
             # self.total_reward += reward
 
 
-class HarmonicRLAgent(RLAgent):
-    """
-    Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
-    This agent is designed for environments with continuous rewards.
-    """
-
-    def __init__(self, name: str, action_space=None, learning_rate=0.05, exploration_rate=0.1, with_rho_trick=True,
-                 rho_learning_rate=0.3):
-        super().__init__(
-            name, action_space, learning_rate, exploration_rate, with_rho_trick, rho_learning_rate
-        )
-        self.reciprocal_rho = 1.0
-        self.total_time = 0
-        self.total_reward = 0
-
-    def reset(self):
-        super().reset()
-        self.reciprocal_rho = 1.0
-        self.total_time = 0
-        self.total_reward = 0
-
-    def learn(self, state, action, reward, next_state, time):
-        """
-        Update the agent's knowledge based on the action taken and the reward received.
-        This method is adapted for continuous rewards.
-        """
-        if next_state not in self.q_table:
-            self.q_table[next_state] = {action: 0 for action in self.action_space}
-
-        best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
-        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
-
-        delta = (
-                reward
-                - self.rho * time
-                + self.q_table[next_state][best_next_action]
-                - self.q_table[state][action]
-        )
-
-        self.q_table[state][action] += self.learning_rate * delta
-
-        if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
-            self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (
-                    time / (reward))  ## EMA of reciprocals
-            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (delta))   ## EMA of reciprocals
-            self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
-            self.total_time += time
-            self.total_reward += reward
-        # print(f"reciprocal: {self.reciprocal_rho}, rho: {self.rho}, moving: {self.total_reward/self.total_time}, last d, r,t: {delta, reward, time}", file=sys.stderr)
-
 
 class HarmonicRLAgent2(RLAgent):
     """
@@ -435,7 +385,7 @@ class HarmonicRLAgent2(RLAgent):
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
-        recip_td_target = time / reward + (self.rq_table[next_state][best_next_action]) - self.reciprocal_rho
+        recip_td_target = (time / reward) - self.reciprocal_rho + (self.rq_table[next_state][best_next_action]) 
         recip_td_error = recip_td_target - self.rq_table[state][action]
 
         self.rq_table[state][action] += self.learning_rate * recip_td_error
@@ -752,7 +702,7 @@ class SMARTRLAgent(RLAgent):
     This agent is designed for environments with continuous rewards.
     """
 
-    def __init__(self, name: str, action_space=None, learning_rate=0.01, exploration_rate=0.3, with_rho_trick=True,
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True,
                  rho_learning_rate=0.3, ):
         super().__init__(
             name, action_space, learning_rate, exploration_rate, with_rho_trick, rho_learning_rate
@@ -773,20 +723,85 @@ class SMARTRLAgent(RLAgent):
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
-        delta = (
-                reward
-                - self.rho * time
+        deltarho = (reward-self.rho*time)
+
+        delta = (deltarho
                 + self.q_table[next_state][best_next_action]
                 - self.q_table[state][action]
         )
 
-        self.q_table[state][action] += self.learning_rate * delta
+        # alpha=(abs(deltarho)+0.001)/(reward+self.rho*time)
+        # alpha= 1.00001-reward/((abs(deltarho)+reward))
+        alpha= 1.00001-(self.rho*time)/((abs(deltarho)+self.rho*time))
+
+
+        print(f"alpha {alpha} reward {reward} time {time} rho-time {self.rho*time} deltarho {deltarho} delta: {delta}", file=sys.stderr)
+
+        # self.q_table[state][action] += self.learning_rate * delta
+        self.q_table[state][action] += alpha* delta
 
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
             # self.rho += self.rho_learning_rate*(delta/time)
             self.total_time += time
             self.total_reward += reward
             self.rho = self.total_reward / self.total_time
+
+class HarmonicRLAgent(RLAgent):
+    """
+    Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
+    This agent is designed for environments with continuous rewards.
+    """
+
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True,
+                 rho_learning_rate=0.3):
+        super().__init__(
+            name, action_space, learning_rate, exploration_rate, with_rho_trick, rho_learning_rate
+        )
+        self.reciprocal_rho = 1.0
+        self.total_time = 0
+        self.total_reward = 0
+
+    def reset(self):
+        super().reset()
+        self.reciprocal_rho = 1.0
+        self.total_time = 0
+        self.total_reward = 0
+
+    def learn(self, state, action, reward, next_state, time):
+        """
+        Update the agent's knowledge based on the action taken and the reward received.
+        This method is adapted for continuous rewards.
+        """
+        if next_state not in self.q_table:
+            self.q_table[next_state] = {action: 0 for action in self.action_space}
+
+        best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
+        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
+
+        deltarho = (reward-self.rho*time)
+
+        delta = (deltarho
+                + self.q_table[next_state][best_next_action]
+                - self.q_table[state][action]
+        )
+
+        # alpha=(abs(deltarho)+0.001)/(reward+self.rho*time)
+        # alpha= 1.00001-reward/((abs(deltarho)+reward))
+        alpha= 1.00001-(self.rho*time)/((abs(deltarho)+self.rho*time))
+
+        print(f"alpha {alpha} reward {reward} time {time} rho-time {self.rho*time} deltarho {deltarho} delta: {delta}", file=sys.stderr)
+
+        # self.q_table[state][action] += self.learning_rate * delta
+        self.q_table[state][action] += alpha * delta
+
+        if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
+            self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (
+                    time / (reward))  ## EMA of reciprocals
+            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (delta))   ## EMA of reciprocals
+            self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
+            self.total_time += time
+            self.total_reward += reward
+        # print(f"reciprocal: {self.reciprocal_rho}, rho: {self.rho}, moving: {self.total_reward/self.total_time}, last d, r,t: {delta, reward, time}", file=sys.stderr)
 
 
 class StateSMARTRLAgent(RLAgent):

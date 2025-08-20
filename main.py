@@ -124,7 +124,7 @@ def experiment_runner(env, name="Experiment"):
 
     episodes = 5000
     eval_steps = 1000
-    epochs = 100
+    epochs = 10
     results = defaultdict(dict)
     for agent in agents:
         print(f"Agent: {agent.name}", file=sys.stderr)
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     # env = two_state_ed_env
     # env =   two_state_ued_wide
     # env =   two_state_ued_narrow
-
+    # env = two_state_latcyclic
     env = two_state_cyclic
 
     experiment_runner(env, name=env.name + " Experiment")
