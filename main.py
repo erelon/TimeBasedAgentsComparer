@@ -13,6 +13,9 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
     """
     env.set_seed(seed)
     env.reset()
+    agent.seed = seed
+    agent.reset()
+
     state = env.get_state()  # In a stateless environment, state is not used
     for episode in range(episodes):
         action = agent.act(state)
