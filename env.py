@@ -1,5 +1,6 @@
 import random
 
+
 # All common env parameters are set in AbstractEnvironment __init__
 # in particular:
 #  interval min and max durations
@@ -104,12 +105,13 @@ class StatelessEnv(AbstractEnvironment):
         self.update_state()
         return T, reward
 
-
     def update_state(self, action=None):
         self.state = 0  # In a stateless environment, the state is always 0
 
     def secret(self):
         return lambda state: 0
+
+
 
 class TwoStatesEvenDistEnv(AbstractEnvironment):
     """
@@ -136,14 +138,14 @@ class TwoStatesEvenDistEnv(AbstractEnvironment):
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
         if self.state == 0:
             if action == 0:
-                reward = 1+self.interval_min_len # self.rng.normalvariate(T * 0.2, 2)
+                reward = 1 + self.interval_min_len  # self.rng.normalvariate(T * 0.2, 2)
             elif action == 1:
-                reward = self.interval_min_len # self.rng.normalvariate(T * 0.19, 2) # 0.55
+                reward = self.interval_min_len  # self.rng.normalvariate(T * 0.19, 2) # 0.55
         else:  # state 1
             if action == 0:
-                reward = self.interval_min_len # self.rng.normalvariate(T * 0.19, 2)
+                reward = self.interval_min_len  # self.rng.normalvariate(T * 0.19, 2)
             elif action == 1:
-                reward = 1+self.interval_min_len # self.rng.normalvariate(T * 0.2, 2)
+                reward = 1 + self.interval_min_len  # self.rng.normalvariate(T * 0.2, 2)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
@@ -165,8 +167,8 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
     def __init__(self, name: str, _maxp=0.8, _maxv=5):
         super().__init__(name)
         self.action_space = [0, 1]
-        self.maxp=_maxp
-        self.maxv=_maxv
+        self.maxp = _maxp
+        self.maxv = _maxv
 
     def update_state(self, action):
         """
@@ -192,14 +194,15 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
 
         if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * self.maxp, self.maxv) # 0.8
+                reward = self.rng.normalvariate(T * self.maxp, self.maxv)  # 0.8
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) # 0.5
+                reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)  # 0.5
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv) # 0.3
+                reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)  # 0.3
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) # 0.1  ## <<< this is the better hand: pays little, but leads to better state
+                reward = self.rng.normalvariate(T * (self.maxp / 3.0),
+                                                self.maxv)  # 0.1  ## <<< this is the better hand: pays little, but leads to better state
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
@@ -214,7 +217,7 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
         In this environment, we return 0 for state 0, action 1 for state 1.
         :return:
         """
-        return lambda state: 0 if state == 0 else 1 
+        return lambda state: 0 if state == 0 else 1
 
 
 class Uneven_wide(TwoStatesUnevenDistEnv):
@@ -229,9 +232,7 @@ class Uneven_narrow(TwoStatesUnevenDistEnv):
         super().__init__(name, _maxp=0.2, )
 
 
-
 # ---------- Cycling and shifting environments
-
 
 class UnevenCycling(TwoStatesUnevenDistEnv):
     def __init__(self, name: str, _maxp=0.8, _maxv=5, _cycle=50):
@@ -239,11 +240,11 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
         # self.action_space = [0, 1]
         # self.maxp=_maxp
         # self.maxv=_maxv
-        self.cycle=_cycle
+        self.cycle = _cycle
 
     def reset(self):
         super().reset()
-        self.clock=0
+        self.clock = 0
         self.cycle_state = 0
 
     def update_state(self, action):
@@ -263,7 +264,6 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
         self.clock += 1
         self.cycle_state = (self.clock // self.cycle) % 2  # Cycles between 0 and 1 per cycle length
 
-
     def get_reward(self, agent, action):
         """
         Get the interval duration and reward for the given action.
@@ -272,19 +272,29 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
         """
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
 
-
-
         if self.cycle_state == 0:
-            # if self.state == 0:
-            if action == 0:
-                reward = self.rng.normalvariate(T * (self.maxp/1.0), self.maxv) 
-            elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) 
+            if self.state == 0:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * self.maxp / 1.0, self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)
+            else:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * self.maxp / 3.0, self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
+
         else:  # state 1
-            if action == 0:
-                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) 
-            elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv)
+            if self.state == 0:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
+            else:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
@@ -299,7 +309,19 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
         In this environment, we return 0 for state 0, action 1 for state 1.
         :return:
         """
-        return lambda state: 0 if self.cycle_state == 0 else 1 
+
+        def secret(state):
+            if self.cycle_state == 0 and state == 0:
+                return 0
+            if self.cycle_state == 0 and state == 1:
+                return 1
+
+            if self.cycle_state == 1 and state == 0:
+                return 1
+            if self.cycle_state == 1 and state == 1:
+                return 0
+
+        return secret
 
 
 class UnevenLatentCycling(TwoStatesUnevenDistEnv):
@@ -308,11 +330,11 @@ class UnevenLatentCycling(TwoStatesUnevenDistEnv):
         # self.action_space = [0, 1]
         # self.maxp=_maxp
         # self.maxv=_maxv
-        self.cycle=_cycle
+        self.cycle = _cycle
 
     def reset(self):
         super().reset()
-        self.clock=0
+        self.clock = 0
         self.cycle_state = 0
 
     def update_state(self, action):
@@ -332,7 +354,6 @@ class UnevenLatentCycling(TwoStatesUnevenDistEnv):
         self.clock += 1
         self.cycle_state = (self.clock // self.cycle) % 2  # Cycles between 0 and 1 per cycle length
 
-
     def get_reward(self, agent, action):
         """
         Get the interval duration and reward for the given action.
@@ -341,19 +362,17 @@ class UnevenLatentCycling(TwoStatesUnevenDistEnv):
         """
         T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
 
-
-
         if self.cycle_state == 0:
             # if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * (self.maxp/1.0), self.maxv) 
+                reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) 
+                reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) 
+                reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv)
+                reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
@@ -368,7 +387,4 @@ class UnevenLatentCycling(TwoStatesUnevenDistEnv):
         In this environment, we return 0 for state 0, action 1 for state 1.
         :return:
         """
-        return lambda state: 0 if self.cycle_state == 0 else 1 
-
-
-
+        return lambda state: 0 if self.cycle_state == 0 else 1

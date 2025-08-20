@@ -21,7 +21,7 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
         agent.learn(state, action, reward, new_state, time)
         state = new_state
 
-    env.set_seed(seed+1)
+    env.set_seed(seed + 1)
     env.reset()
     rewards = []
     for _ in range(eval_steps):
@@ -36,7 +36,7 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
 def experiment_runner(env, name="Experiment"):
     print(f"Running experiment with env: {name}")
 
-    oracle = OracleAgent(name="Oracle Agent",  action_space=env.get_action_space(), env_secret=env.secret(),   )
+    oracle = OracleAgent(name="Oracle Agent", action_space=env.get_action_space(), env_secret=env.secret(), )
 
     q_agent = QLearningAgent(name="QLearning", action_space=env.get_action_space())
     continuousQ_agent = ContinuousQLearningAgent(
@@ -63,7 +63,7 @@ def experiment_runner(env, name="Experiment"):
     smart_r_agent_with_trick = SMARTRLAgent(name="SMART (update on policy)",
                                             action_space=env.get_action_space())
     smart_r_agent_without_trick = SMARTRLAgent(name="SMART (update always)",
-                                            action_space=env.get_action_space(), with_rho_trick=False)
+                                               action_space=env.get_action_space(), with_rho_trick=False)
 
     mab = MAB(name="MAB", action_space=env.get_action_space())
     c_mab = ContinuesMAB(name="Continues MAB", action_space=env.get_action_space())
@@ -74,20 +74,23 @@ def experiment_runner(env, name="Experiment"):
     )
 
     harmonic_agent_with_trick = HarmonicRLAgent(name="harmonic (update on policy)",
-                                            action_space=env.get_action_space())
+                                                action_space=env.get_action_space())
     harmonic_agent_without_trick = HarmonicRLAgent(name="harmonic (update always)",
-                                            action_space=env.get_action_space(), with_rho_trick=False)
+                                                   action_space=env.get_action_space(), with_rho_trick=False)
 
     harmonicq_agent = HarmonicQAgent(name="harmonic Q", action_space=env.get_action_space())
 
-    myopic_agent_without =MyopicRLearn(name="myopic R", action_space=env.get_action_space(), with_rho_trick=False)
-    myopic_agent_with =MyopicRLearn(name="myopic R (upd on policy)", action_space=env.get_action_space())
+    myopic_agent_without = MyopicRLearn(name="myopic R", action_space=env.get_action_space(), with_rho_trick=False)
+    myopic_agent_with = MyopicRLearn(name="myopic R (upd on policy)", action_space=env.get_action_space())
 
-    statesmart_agent_with = StateSMARTRLAgent(name="State SMART (update on policy)", action_space=env.get_action_space())
-    statesmart_agent_without = StateSMARTRLAgent(name="State SMART (update always)", action_space=env.get_action_space(), with_rho_trick=False)
+    statesmart_agent_with = StateSMARTRLAgent(name="State SMART (update on policy)",
+                                              action_space=env.get_action_space())
+    statesmart_agent_without = StateSMARTRLAgent(name="State SMART (update always)",
+                                                 action_space=env.get_action_space(), with_rho_trick=False)
 
     harmonic2_with = HarmonicRLAgent2(name="Harmonic2 (update on policy)", action_space=env.get_action_space())
-    harmonic2_without = HarmonicRLAgent2(name="Harmonic2 (update always)", action_space=env.get_action_space(), with_rho_trick=False)
+    harmonic2_without = HarmonicRLAgent2(name="Harmonic2 (update always)", action_space=env.get_action_space(),
+                                         with_rho_trick=False)
 
     print("Got here")
     agents = [
@@ -95,10 +98,10 @@ def experiment_runner(env, name="Experiment"):
         random_agent,
         # ucb,
         continuosUCB,
-         # q_agent,
-         # continuousQ_agent,
-         # harmonicq_agent,
-        # r_agent_with_trick,
+        # q_agent,
+        # continuousQ_agent,
+        # harmonicq_agent,
+        r_agent_with_trick,
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,
@@ -115,8 +118,8 @@ def experiment_runner(env, name="Experiment"):
     ]
 
     episodes = 5000
-    eval_steps = 200
-    epochs =50 
+    eval_steps = 1000
+    epochs = 100
     results = defaultdict(dict)
     for agent in agents:
         print(f"Agent: {agent.name}", file=sys.stderr)
@@ -137,7 +140,7 @@ def experiment_runner(env, name="Experiment"):
         # Print the best action ratio for each state
         results[agent.name] = {
             f"Average Reward over {eval_steps} steps": sum(avg_rewards)
-            / len(avg_rewards)
+                                                       / len(avg_rewards)
         }
         print(f"Best action ratio for {agent.name}:")
         for state, actions in best_action_per_state.items():
@@ -166,17 +169,18 @@ if __name__ == "__main__":
     two_state_ed_env = TwoStatesEvenDistEnv("Two States Even Distribution Environment")
     two_state_ued_wide = Uneven_wide("Two States Uneven Distribution (wide range)")
     two_state_ued_narrow = Uneven_narrow("Two States Uneven Distribution (narrow range)")
-    two_state_latcyclic = UnevenLatentCycling("Two states cycling, no transition changes") 
+    two_state_cyclic = UnevenCycling("Two states cycling, no transition changes")
+    two_state_latcyclic = UnevenLatentCycling("Two states cycling, no transition changes")
+
     # Run experiments for each environment
     # experiment_runner(stateless_env, name="Stateless Environment Experiment")
 
     # experiment_runner(two_state_ed_env, name="Two States Even Distribution Environment Experiment")
     # env =  stateless_env
-    env =   two_state_ed_env
+    # env = two_state_ed_env
     # env =   two_state_ued_wide
     # env =   two_state_ued_narrow
 
-    env = two_state_latcyclic
+    env = two_state_cyclic
 
-    experiment_runner(env, name=env.name+" Experiment")
-
+    experiment_runner(env, name=env.name + " Experiment")
