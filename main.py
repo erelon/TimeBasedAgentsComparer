@@ -94,11 +94,11 @@ def experiment_runner(env, name="Experiment"):
         oracle,
         random_agent,
         # ucb,
-        # continuosUCB,
+        continuosUCB,
          # q_agent,
          # continuousQ_agent,
          # harmonicq_agent,
-        r_agent_with_trick,
+        # r_agent_with_trick,
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     two_state_ed_env = TwoStatesEvenDistEnv("Two States Even Distribution Environment")
     two_state_ued_wide = Uneven_wide("Two States Uneven Distribution (wide range)")
     two_state_ued_narrow = Uneven_narrow("Two States Uneven Distribution (narrow range)")
-    two_state_cyclic = UnevenCycling("Two states cycling, no transition changes") 
+    two_state_latcyclic = UnevenLatentCycling("Two states cycling, no transition changes") 
     # Run experiments for each environment
     # experiment_runner(stateless_env, name="Stateless Environment Experiment")
 
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     # env =   two_state_ued_wide
     # env =   two_state_ued_narrow
 
-    env = two_state_cyclic
+    env = two_state_latcyclic
 
     experiment_runner(env, name=env.name+" Experiment")
 

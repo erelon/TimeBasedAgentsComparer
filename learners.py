@@ -345,7 +345,7 @@ class HarmonicRLAgent(RLAgent):
     This agent is designed for environments with continuous rewards.
     """
 
-    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.3 ):
+    def __init__(self, name: str, action_space=None, learning_rate=0.01, exploration_rate=0.3, with_rho_trick=True, rho_learning_rate=0.3):
         super().__init__(
             name, action_space, learning_rate,  exploration_rate, with_rho_trick, rho_learning_rate
         )
@@ -735,7 +735,7 @@ class SMARTRLAgent(RLAgent):
     This agent is designed for environments with continuous rewards.
     """
 
-    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True, rho_learning_rate=0.03,):
+    def __init__(self, name: str, action_space=None, learning_rate=0.01, exploration_rate=0.3, with_rho_trick=True, rho_learning_rate=0.3,):
         super().__init__(
             name, action_space, learning_rate,  exploration_rate, with_rho_trick, rho_learning_rate
         )

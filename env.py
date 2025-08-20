@@ -232,6 +232,7 @@ class Uneven_narrow(TwoStatesUnevenDistEnv):
 
 # ---------- Cycling and shifting environments
 
+
 class UnevenCycling(TwoStatesUnevenDistEnv):
     def __init__(self, name: str, _maxp=0.8, _maxv=5, _cycle=50):
         super().__init__(name, _maxp, _maxv)
@@ -276,14 +277,83 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
         if self.cycle_state == 0:
             # if self.state == 0:
             if action == 0:
-                reward = self.rng.normalvariate(T * self.maxp, self.maxv) # 0.8
+                reward = self.rng.normalvariate(T * (self.maxp/1.0), self.maxv) 
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) # 0.5
+                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) 
         else:  # state 1
             if action == 0:
-                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv) # 0.3
+                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) 
             elif action == 1:
-                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) # 0.1  ## <<< this is the better hand: pays little, but leads to better state
+                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv)
+
+        # make sure reward is positive
+        reward = max(self.interval_min_len, reward)
+        reward = min(T, reward)
+
+        self.update_state(action)
+        return T, reward
+
+    def secret(self):
+        """
+        A helper method to load an oracle for the environment.
+        In this environment, we return 0 for state 0, action 1 for state 1.
+        :return:
+        """
+        return lambda state: 0 if self.cycle_state == 0 else 1 
+
+
+class UnevenLatentCycling(TwoStatesUnevenDistEnv):
+    def __init__(self, name: str, _maxp=0.8, _maxv=5, _cycle=50):
+        super().__init__(name, _maxp, _maxv)
+        # self.action_space = [0, 1]
+        # self.maxp=_maxp
+        # self.maxv=_maxv
+        self.cycle=_cycle
+
+    def reset(self):
+        super().reset()
+        self.clock=0
+        self.cycle_state = 0
+
+    def update_state(self, action):
+        """
+        Update the state of the environment.
+        In this environment, we can switch between two states.
+        """
+        if self.state == 0:
+            self.state = 1 if self.rng.random() < 0.2 else 0
+
+        elif self.state == 1 and action == 0:
+            self.state = 0 if self.rng.random() < 0.2 else 1
+
+        elif self.state == 1 and action == 1:
+            self.state = 0 if self.rng.random() < 0.8 else 1
+
+        self.clock += 1
+        self.cycle_state = (self.clock // self.cycle) % 2  # Cycles between 0 and 1 per cycle length
+
+
+    def get_reward(self, agent, action):
+        """
+        Get the interval duration and reward for the given action.
+        action 0 is supposed to be better (higher reward) for state 0
+        action 1 is supposed to be better for state 1: lower reward, but leads back to state 0 which is much better
+        """
+        T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
+
+
+
+        if self.cycle_state == 0:
+            # if self.state == 0:
+            if action == 0:
+                reward = self.rng.normalvariate(T * (self.maxp/1.0), self.maxv) 
+            elif action == 1:
+                reward = self.rng.normalvariate(T * (self.maxp/2.0), self.maxv) 
+        else:  # state 1
+            if action == 0:
+                reward = self.rng.normalvariate(T * (self.maxp/3.0), self.maxv) 
+            elif action == 1:
+                reward = self.rng.normalvariate(T * (self.maxp/1.5), self.maxv)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
