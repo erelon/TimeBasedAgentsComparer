@@ -26,14 +26,14 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
         state = new_state
         rewards.append(reward)
 
-    # env.set_seed(seed + 1)
-    # env.reset()
-    # rewards = []
-    # for _ in range(eval_steps):
-        # state = env.get_state()
-        # action = agent.eval(state)
-        # time, reward = env.get_reward(agent, action)
-        # rewards.append(reward)
+    env.set_seed(seed + 1)
+    env.reset()
+    rewards = []
+    for _ in range(eval_steps):
+        state = env.get_state()
+        action = agent.eval(state)
+        time, reward = env.get_reward(agent, action)
+        rewards.append(reward)
 
     return sum(rewards) / len(rewards)
 
@@ -65,10 +65,15 @@ def experiment_runner(env, name="Experiment"):
         with_rho_trick=False,
     )
 
-    smart_r_agent_with_trick = SMARTRLAgent(name="SMART (update on policy)",
-                                            action_space=env.get_action_space())
-    smart_r_agent_without_trick = SMARTRLAgent(name="SMART (update always)",
-                                               action_space=env.get_action_space(), with_rho_trick=False)
+
+    statesmart_agent_with = StateSMARTRLAgent(
+        name="State SMART (update on policy)", action_space=env.get_action_space()
+    )
+    statesmart_agent_without = StateSMARTRLAgent(
+        name="State SMART (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
 
     mab = MAB(name="MAB", action_space=env.get_action_space())
     c_mab = ContinuesMAB(name="Continues MAB", action_space=env.get_action_space())
@@ -78,24 +83,75 @@ def experiment_runner(env, name="Experiment"):
         name="Continuous UCB", action_space=env.get_action_space()
     )
 
-    harmonic_agent_with_trick = HarmonicRLAgent(name="harmonic (update on policy)",
-                                                action_space=env.get_action_space())
-    harmonic_agent_without_trick = HarmonicRLAgent(name="harmonic (update always)",
-                                                   action_space=env.get_action_space(), with_rho_trick=False)
+    harmonicq_agent = HarmonicQAgent(
+        name="harmonic Q", action_space=env.get_action_space()
+    )
 
-    harmonicq_agent = HarmonicQAgent(name="harmonic Q", action_space=env.get_action_space())
+    myopic_agent_without = MyopicRLearn(
+        name="myopic R", action_space=env.get_action_space(), with_rho_trick=False
+    )
+    myopic_agent_with = MyopicRLearn(
+        name="myopic R (upd on policy)", action_space=env.get_action_space()
+    )
 
-    myopic_agent_without = MyopicRLearn(name="myopic R", action_space=env.get_action_space(), with_rho_trick=False)
-    myopic_agent_with = MyopicRLearn(name="myopic R (upd on policy)", action_space=env.get_action_space())
+    smart_r_agent_with_trick = SMARTRLAgent(
+        name="SMART (update on policy)", action_space=env.get_action_space()
+    )
+    smart_r_agent_without_trick = SMARTRLAgent(
+        name="SMART (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
 
-    statesmart_agent_with = StateSMARTRLAgent(name="State SMART (update on policy)",
-                                              action_space=env.get_action_space())
-    statesmart_agent_without = StateSMARTRLAgent(name="State SMART (update always)",
-                                                 action_space=env.get_action_space(), with_rho_trick=False)
 
-    harmonic2_with = HarmonicRLAgent2(name="Harmonic2 (update on policy)", action_space=env.get_action_space())
-    harmonic2_without = HarmonicRLAgent2(name="Harmonic2 (update always)", action_space=env.get_action_space(),
-                                         with_rho_trick=False)
+    harmonic_agent_with_trick = HarmonicRLAgent(
+        name="harmonic (update on policy)", action_space=env.get_action_space()
+    )
+    harmonic_agent_without_trick = HarmonicRLAgent(
+        name="harmonic (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
+
+
+    harmonic2_with = HarmonicRLAgent2(
+        name="Harmonic2 (update on policy)", action_space=env.get_action_space()
+    )
+    harmonic2_without = HarmonicRLAgent2(
+        name="Harmonic2 (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
+
+    adapt_smart_r_agent_with_trick = AdaptiveSMARTRLAgent(
+        name="Adapt. SMART (update on policy)", action_space=env.get_action_space()
+    )
+    adapt_smart_r_agent_without_trick = AdaptiveSMARTRLAgent(
+        name="Adapt. SMART (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
+
+
+    adapt_harmonic_agent_with_trick = AdaptiveHarmonicRLAgent(
+        name="Adapt. harmonic (update on policy)", action_space=env.get_action_space()
+    )
+    adapt_harmonic_agent_without_trick = AdaptiveHarmonicRLAgent(
+        name="Adapt. harmonic (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
+
+
+    adapt_harmonic2_with = AdaptiveHarmonicRLAgent2(
+        name="Adapt. Harmonic2 (update on policy)", action_space=env.get_action_space()
+    )
+    adapt_harmonic2_without = AdaptiveHarmonicRLAgent2(
+        name="Adapt. Harmonic2 (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
+
 
     print("Got here")
     agents = [
@@ -110,21 +166,27 @@ def experiment_runner(env, name="Experiment"):
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,
-        smart_r_agent_with_trick,
-        # smart_r_agent_without_trick,
-        harmonic_agent_with_trick,
-        # harmonic_agent_without_trick,
         # myopic_agent_with,
         # myopic_agent_without,
         # statesmart_agent_with,
         # statesmart_agent_without,
+        smart_r_agent_with_trick,
+        # smart_r_agent_without_trick,
+        harmonic_agent_with_trick,
+        # harmonic_agent_without_trick,
         # harmonic2_with,
         # harmonic2_without,
+        # adapt_smart_r_agent_with_trick,
+        # adaptive_smart_r_agent_without_trick,
+        adapt_harmonic_agent_with_trick,
+        # adaptive_harmonic_agent_without_trick,
+        # adapt_harmonic2_with,
+        # adaptive_harmonic2_without,
     ]
 
     episodes = 5000
-    eval_steps = 1000
-    epochs = 10
+    eval_steps = 100
+    epochs = 100
     results = defaultdict(dict)
     for agent in agents:
         print(f"Agent: {agent.name}", file=sys.stderr)
@@ -145,7 +207,7 @@ def experiment_runner(env, name="Experiment"):
         # Print the best action ratio for each state
         results[agent.name] = {
             f"Average Reward over {eval_steps} steps": sum(avg_rewards)
-                                                       / len(avg_rewards)
+            / len(avg_rewards)
         }
         print(f"Best action ratio for {agent.name}:")
         for state, actions in best_action_per_state.items():
@@ -173,9 +235,12 @@ if __name__ == "__main__":
     stateless_env = StatelessEnv("Stateless Environment")
     two_state_ed_env = TwoStatesEvenDistEnv("Two States Even Distribution Environment")
     two_state_ued_wide = Uneven_wide("Two States Uneven Distribution (wide range)")
-    two_state_ued_narrow = Uneven_narrow("Two States Uneven Distribution (narrow range)")
+    two_state_ued_narrow = Uneven_narrow(
+        "Two States Uneven Distribution (narrow range)"
+    )
     two_state_cyclic = UnevenCycling("Two states cycling, no transition changes")
     two_state_latcyclic = UnevenLatentCycling("Two states cycling, no transition changes")
+    shifting_twostate =ShiftingUnevenTwoStates("Shifting Uneven Two States") 
 
     # Run experiments for each environment
     # experiment_runner(stateless_env, name="Stateless Environment Experiment")
@@ -186,6 +251,7 @@ if __name__ == "__main__":
     # env =   two_state_ued_wide
     # env =   two_state_ued_narrow
     # env = two_state_latcyclic
-    env = two_state_cyclic
+    # env = two_state_cyclic
+    env = shifting_twostate
 
-    experiment_runner(env, name=env.name + " Experiment")
+    experiment_runner(env, name=env.name)
