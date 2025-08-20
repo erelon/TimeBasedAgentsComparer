@@ -13,6 +13,7 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
     """
     env.set_seed(seed)
     env.reset()
+    rewards = []
     state = env.get_state()  # In a stateless environment, state is not used
     for episode in range(episodes):
         action = agent.act(state)
@@ -20,15 +21,16 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
         new_state = env.get_state()
         agent.learn(state, action, reward, new_state, time)
         state = new_state
-
-    env.set_seed(seed + 1)
-    env.reset()
-    rewards = []
-    for _ in range(eval_steps):
-        state = env.get_state()
-        action = agent.eval(state)
-        time, reward = env.get_reward(agent, action)
         rewards.append(reward)
+
+    # env.set_seed(seed + 1)
+    # env.reset()
+    # rewards = []
+    # for _ in range(eval_steps):
+        # state = env.get_state()
+        # action = agent.eval(state)
+        # time, reward = env.get_reward(agent, action)
+        # rewards.append(reward)
 
     return sum(rewards) / len(rewards)
 
@@ -97,11 +99,11 @@ def experiment_runner(env, name="Experiment"):
         oracle,
         random_agent,
         # ucb,
-        continuosUCB,
+        # continuosUCB,
         # q_agent,
         # continuousQ_agent,
         # harmonicq_agent,
-        r_agent_with_trick,
+        # r_agent_with_trick,
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,

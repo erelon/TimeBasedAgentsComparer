@@ -275,26 +275,26 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
         if self.cycle_state == 0:
             if self.state == 0:
                 if action == 0:
-                    reward = self.rng.normalvariate(T * self.maxp / 1.0, self.maxv)
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
                 elif action == 1:
                     reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)
             else:
                 if action == 0:
-                    reward = self.rng.normalvariate(T * self.maxp / 3.0, self.maxv)
+                    reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
                 elif action == 1:
                     reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
 
         else:  # state 1
             if self.state == 0:
                 if action == 0:
-                    reward = self.rng.normalvariate(T * (self.maxp / 2.0), self.maxv)
+                    reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
                 elif action == 1:
                     reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
             else:
                 if action == 0:
-                    reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
-                elif action == 1:
                     reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
 
         # make sure reward is positive
         reward = max(self.interval_min_len, reward)
