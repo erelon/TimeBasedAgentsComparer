@@ -13,8 +13,8 @@ class AbstractEnvironment:
 
         # we want to make sure the random seed is set for reproducibility
 
-        self.interval_min_len = 1
-        self.interval_max_len = 500
+        self.interval_min_len = 10
+        self.interval_max_len = 1000
         self.set_seed(seed)
         self.reset()
 
@@ -235,7 +235,7 @@ class Uneven_narrow(TwoStatesUnevenDistEnv):
 # ---------- Cycling and shifting environments
 
 class UnevenCycling(TwoStatesUnevenDistEnv):
-    def __init__(self, name: str, _maxp=0.8, _maxv=5, _cycle=5):
+    def __init__(self, name: str, _maxp=0.9, _maxv=50, _cycle=5):
         super().__init__(name, _maxp, _maxv)
         # self.action_space = [0, 1]
         # self.maxp=_maxp
@@ -325,7 +325,7 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
 
 
 class UnevenLatentCycling(TwoStatesUnevenDistEnv):
-    def __init__(self, name: str, _maxp=0.8, _maxv=5, _cycle=50):
+    def __init__(self, name: str, _maxp=0.9, _maxv=10, _cycle=50):
         super().__init__(name, _maxp, _maxv)
         # self.action_space = [0, 1]
         # self.maxp=_maxp
@@ -391,7 +391,7 @@ class UnevenLatentCycling(TwoStatesUnevenDistEnv):
 
 
 class ShiftingUnevenTwoStates(TwoStatesUnevenDistEnv):
-    def __init__(self, name: str, _maxp=0.8, _maxv=5, _shiftsteps=50):
+    def __init__(self, name: str, _maxp=1.0, _maxv=40, _shiftsteps=50):
         super().__init__(name, _maxp, _maxv)
         # self.action_space = [0, 1]
         # self.maxp=_maxp
@@ -456,4 +456,105 @@ class ShiftingUnevenTwoStates(TwoStatesUnevenDistEnv):
         :return:
         """
         return lambda state: 0 if self.state == 0 else 1
+
+
+class DoublyUnevenCycling(UnevenCycling):
+    def __init__(self, name: str, _maxp=0.9, _maxv=50, _cycle=150):
+        self.original_cycle = _cycle
+        super().__init__(name, _maxp, _maxv,_cycle)
+        # self.action_space = [0, 1]
+        # self.maxp=_maxp
+        # self.maxv=_maxv
+        self.cycle = _cycle
+        self.cycle_state = 0
+        self.clock = 0
+
+    def reset(self):
+        super().reset()
+        self.clock = 0
+        self.cycle_state = 0
+        self.cycle = self.original_cycle
+          
+    def update_state(self, action):
+        """
+        Update the state of the environment.
+        In this environment, we can switch between two states.
+        """
+        if self.state == 0:
+            self.state = 1 if self.rng.random() < 0.2 else 0
+
+        elif self.state == 1 and action == 0:
+            self.state = 0 if self.rng.random() < 0.2 else 1
+
+        elif self.state == 1 and action == 1:
+            self.state = 0 if self.rng.random() < 0.8 else 1
+
+        self.clock += 1
+        old = self.cycle_state
+        new = (self.clock // self.cycle) % 2  # Cycles between 0 and 1 per cycle length
+        if old != new:
+            self.cycle_state = new
+            self.cycle = self.rng.randint(10,self.original_cycle)  # Randomly change the cycle length
+
+
+    def get_reward(self, agent, action):
+        """
+        Get the interval duration and reward for the given action.
+        action 0 is supposed to be better (higher reward) for state 0
+        action 1 is supposed to be better for state 1: lower reward, but leads back to state 0 which is much better
+        """
+        T = self.rng.uniform(self.interval_min_len, self.interval_max_len)
+
+        if self.cycle_state == 0:
+            if self.state == 0:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 9.0), self.maxv)
+            else:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
+
+        else:  # self.cycle_state 1
+            if self.state == 0:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * (self.maxp / 9.0), self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.0), self.maxv)
+            else:
+                if action == 0:
+                    reward = self.rng.normalvariate(T * (self.maxp / 3.0), self.maxv)
+                elif action == 1:
+                    reward = self.rng.normalvariate(T * (self.maxp / 1.5), self.maxv)
+
+        # make sure reward is positive
+        reward = max(self.interval_min_len, reward)
+        reward = min(T, reward)
+
+        self.update_state(action)
+        return T, reward
+
+    def secret(self):
+        """
+        A helper method to load an oracle for the environment.
+        In this environment, we return 0 for state 0, action 1 for state 1.
+        :return:
+        """
+
+        def secret(state):
+            if self.cycle_state == 0 and state == 0:
+                return 0
+            if self.cycle_state == 0 and state == 1:
+                return 1
+
+            if self.cycle_state == 1 and state == 0:
+                return 1
+            if self.cycle_state == 1 and state == 1:
+                return 1 
+
+        return secret
+
+
         

@@ -241,6 +241,7 @@ if __name__ == "__main__":
     two_state_cyclic = UnevenCycling("Two states cycling, no transition changes")
     two_state_latcyclic = UnevenLatentCycling("Two states cycling, no transition changes")
     shifting_twostate =ShiftingUnevenTwoStates("Shifting Uneven Two States") 
+    doublecyclic_twostate = DoublyUnevenCycling("Uneven Cycles, Uneven States")
 
     # Run experiments for each environment
     # experiment_runner(stateless_env, name="Stateless Environment Experiment")
@@ -253,5 +254,6 @@ if __name__ == "__main__":
     # env = two_state_latcyclic
     # env = two_state_cyclic
     env = shifting_twostate
+    # env = doublecyclic_twostate
 
     experiment_runner(env, name=env.name)
