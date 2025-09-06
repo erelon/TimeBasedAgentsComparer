@@ -676,7 +676,7 @@ class HarmonicRLAgent2(RLAgent):
     def reset(self):
         super().reset()
         self.rq_table = {}
-        self.reciprocal_rho = 1.0 
+        self.reciprocal_rho = 0 
 
         self.total_time = 0
         self.total_reward = 0
@@ -714,8 +714,8 @@ class HarmonicRLAgent2(RLAgent):
         ):
             # self.reciprocal_rho = 0;
             # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward))   ## EMA of reciprocals
-            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_error)   ## EMA of reciprocals of td_error? td_target
-            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_target)   ## EMA of reciprocals of td_error? td_target
+            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_error)   ## EMA of reciprocals of td_error
+            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_target)   ## EMA of reciprocals of td_target
             # self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (self.rq_table[state][action] )
             self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
             self.total_time += time
@@ -1108,8 +1108,8 @@ class StateSMARTRLAgent(RLAgent):
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
-        rho = (self.reward[state] / self.time[state]) if self.time[state] != 0 else 1  # (reward/time)
-
+        # rho = (self.reward[state] / self.time[state]) if self.time[state] != 0 else 1  # (reward/time)
+        rho = self.rho
         delta = reward - rho * time
 
         new_q_state = delta + self.q_table[next_state][best_next_action]
@@ -1119,7 +1119,7 @@ class StateSMARTRLAgent(RLAgent):
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
             self.reward[state] += reward
             self.time[state] += time
-            self.total_time += time
-            self.total_reward += reward
+            self.total_time = (1-self.rho_learning_rate)*self.total_time + (self.rho_learning_rate)* time
+            self.total_reward = (1-self.rho_learning_rate)*reward +(self.rho_learning_rate)*reward 
             self.rho = self.total_reward / self.total_time
             # print(f"Rho: {self.rho}, state {state} rho {rho}", file=sys.stderr)

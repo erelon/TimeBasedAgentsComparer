@@ -132,6 +132,16 @@ def experiment_runner(env, name="Experiment"):
         with_rho_trick=False,
     )
 
+    state_smart_r_agent_with_trick = StateSMARTRLAgent(
+        name="State-rho. SMART (update on policy)", action_space=env.get_action_space()
+    )
+    state_smart_r_agent_without_trick = StateSMARTRLAgent(
+        name="State-rho. SMART (update always)",
+        action_space=env.get_action_space(),
+        with_rho_trick=False,
+    )
+
+
 
     adapt_harmonic_agent_with_trick = AdaptiveHarmonicRLAgent(
         name="Adapt. harmonic (update on policy)", action_space=env.get_action_space()
@@ -158,11 +168,11 @@ def experiment_runner(env, name="Experiment"):
         oracle,
         random_agent,
         # ucb,
-        continuosUCB,
+        # continuosUCB,
         # q_agent,
         # continuousQ_agent,
         # harmonicq_agent,
-        r_agent_with_trick,
+        # r_agent_with_trick,
         # continuous_r_agent_with_trick,
         # r_agent_without_trick,
         # continuous_r_agent_without_trick,
@@ -174,11 +184,13 @@ def experiment_runner(env, name="Experiment"):
         # smart_r_agent_without_trick,
         harmonic_agent_with_trick,
         # harmonic_agent_without_trick,
-        # harmonic2_with,
+        harmonic2_with,
         # harmonic2_without,
         # adapt_smart_r_agent_with_trick,
         # adaptive_smart_r_agent_without_trick,
-        adapt_harmonic_agent_with_trick,
+        state_smart_r_agent_with_trick,
+        # state_smart_r_agent_without_trick,
+        # adapt_harmonic_agent_with_trick,
         # adaptive_harmonic_agent_without_trick,
         # adapt_harmonic2_with,
         # adaptive_harmonic2_without,
