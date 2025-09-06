@@ -197,7 +197,7 @@ def experiment_runner(env, name="Experiment"):
     ]
 
     episodes = 5000
-    eval_steps = 100
+    eval_steps = 250
     epochs = 100
     results = defaultdict(dict)
     for agent in agents:

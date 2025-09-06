@@ -699,23 +699,46 @@ class HarmonicRLAgent2(RLAgent):
         )
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
-        recip_td_target = (
-            (time / reward)
-            - self.reciprocal_rho
-            + (self.rq_table[next_state][best_next_action])
-        )
+        ## Original BEGIN  290
+        # time/reward is 1/ (reward/time)
+        recip_td_target = ( (time / reward) - self.reciprocal_rho + (self.rq_table[next_state][best_next_action]) )
         recip_td_error = recip_td_target - self.rq_table[state][action]
 
         self.rq_table[state][action] += self.learning_rate * recip_td_error
         self.q_table[state][action] = 1 / self.rq_table[state][action]
-     
+        # Original END
+
+        # New begin less than original 277
+        # target=(reward/time) - (self.rho) + self.q_table[next_state][best_next_action]
+        # recip_td_target = 1/target
+        # recip_td_error = recip_td_target - self.rq_table[state][action]
+
+        # self.rq_table[state][action] += self.learning_rate * recip_td_error
+        # self.q_table[state][action] = 1 / self.rq_table[state][action]
+        # New end
+
+        # new new begin  286
+        # target=(reward/time) - (self.rho)
+        # recip_td_target = 1/target
+        # recip_td_error = recip_td_target - self.rq_table[state][action] + self.rq_table[next_state][best_next_action]
+
+        # self.rq_table[state][action] += self.learning_rate * recip_td_error
+        # self.q_table[state][action] = 1 / self.rq_table[state][action]
+        # new new end
+
+        # new3 begin
+
+
+  
+
+
         if not self.with_rho_trick or (
             self.with_rho_trick and action == best_current_action
         ):
             # self.reciprocal_rho = 0;
-            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward))   ## EMA of reciprocals
+            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward))   ## EMA of reciprocals -- good for new new
             # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_error)   ## EMA of reciprocals of td_error
-            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_target)   ## EMA of reciprocals of td_target
+            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_target)   ## EMA of reciprocals of td_target -- good for Original, for new
             # self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (self.rq_table[state][action] )
             self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
             self.total_time += time
@@ -1079,7 +1102,7 @@ class StateSMARTRLAgent(RLAgent):
     """
 
     def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True,
-                 rho_learning_rate=0.03, ):
+                 rho_learning_rate=0.3, ):
         super().__init__(
             name, action_space, learning_rate, exploration_rate, with_rho_trick, rho_learning_rate
         )
