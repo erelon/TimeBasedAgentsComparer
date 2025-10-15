@@ -821,7 +821,13 @@ class HarmonicRLAgent(RLAgent):
 
     def reset(self):
         super().reset()
-        self.reciprocal_rho = 1.0
+        self.pos_reciprocal_rho = 0.0
+        self.neg_reciprocal_rho = 0.0
+
+        self.neg_w = 0
+        self.pos_w = 0
+        self.zero_w = 0
+
         self.total_time = 0
         self.total_reward = 0
 
@@ -850,12 +856,40 @@ class HarmonicRLAgent(RLAgent):
         if not self.with_rho_trick or (
                 self.with_rho_trick and action == best_current_action
         ):
-            self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (
-                    time / (reward))
-            # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (delta))   ## EMA of reciprocals
-            self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
-            self.total_time += time
-            self.total_reward += reward
+            pos, neg, zero = 0, 0, 0
+            if reward > 0:
+                pos = 1
+            elif reward < 0:
+                neg = 1
+            else:
+                zero = 1
+
+            if zero == 1:
+                reciprocal_rate = 0
+            else:
+                reciprocal_rate = time / reward
+
+            self.pos_reciprocal_rho = (1 - self.rho_learning_rate) * self.pos_reciprocal_rho + \
+                                      self.rho_learning_rate * reciprocal_rate * pos
+            self.pos_w = (1 - self.rho_learning_rate) * self.pos_w + self.rho_learning_rate * pos
+
+            if self.pos_reciprocal_rho == 0:
+                H_pos = 0
+            else:
+                H_pos = self.pos_w / self.pos_reciprocal_rho
+
+            self.neg_reciprocal_rho = (1 - self.rho_learning_rate) * self.neg_reciprocal_rho + \
+                                      self.rho_learning_rate * reciprocal_rate * neg
+            self.neg_w = (1 - self.rho_learning_rate) * self.neg_w + self.rho_learning_rate * neg
+
+            if self.neg_reciprocal_rho == 0:
+                H_neg = 0
+            else:
+                H_neg = self.neg_w / self.neg_reciprocal_rho
+
+            self.zero_w = (1 - self.rho_learning_rate) * self.zero_w + self.rho_learning_rate * zero
+
+            self.rho = (H_pos * self.pos_w + H_neg * self.neg_w) / (self.pos_w + self.neg_w + self.zero_w)
 
 
 class AdaptiveHarmonicRLAgent2(RLAgent):
