@@ -112,7 +112,6 @@ class StatelessEnv(AbstractEnvironment):
         return lambda state: 0
 
 
-
 class TwoStatesEvenDistEnv(AbstractEnvironment):
     """
     Two states environment with even distribution.
@@ -319,7 +318,7 @@ class UnevenCycling(TwoStatesUnevenDistEnv):
             if self.cycle_state == 1 and state == 0:
                 return 1
             if self.cycle_state == 1 and state == 1:
-                return 1 
+                return 1
 
         return secret
 
@@ -393,9 +392,6 @@ class UnevenLatentCycling(TwoStatesUnevenDistEnv):
 class ShiftingUnevenTwoStates(TwoStatesUnevenDistEnv):
     def __init__(self, name: str, _maxp=0.8, _maxv=5, _shiftsteps=50):
         super().__init__(name, _maxp, _maxv)
-        # self.action_space = [0, 1]
-        # self.maxp=_maxp
-        # self.maxv=_maxv
         self.shiftsteps = _shiftsteps
 
     def reset(self):
@@ -419,9 +415,8 @@ class ShiftingUnevenTwoStates(TwoStatesUnevenDistEnv):
 
         self.clock += 1
         if self.clock % self.shiftsteps == 0:
-            # self.shift_constant= self.rng.uniform(0.1,1.0) # shifting up and down
-            self.shift_constant= 0.9*self.shift_constant # shifting down slowly
-
+            self.shift_constant= self.rng.uniform(0.1,1.0) # shifting up and down
+            # self.shift_constant = 0.9 * self.shift_constant  # shifting down slowly
 
     def get_reward(self, agent, action):
         """
@@ -456,4 +451,3 @@ class ShiftingUnevenTwoStates(TwoStatesUnevenDistEnv):
         :return:
         """
         return lambda state: 0 if self.state == 0 else 1
-        

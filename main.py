@@ -18,13 +18,18 @@ def train_single_agent(agent, env, episodes=200, eval_steps=20, seed=42):
     agent.reset()
 
     state = env.get_state()  # In a stateless environment, state is not used
+    last_policy_changed_at = 0
     for episode in range(episodes):
         action = agent.act(state)
         time, reward = env.get_reward(agent, action)
         new_state = env.get_state()
         agent.learn(state, action, reward, new_state, time)
+        if agent.get_policy_changed():
+            last_policy_changed_at = episode
         state = new_state
         rewards.append(reward)
+
+    agent.last_policy_changed_at = last_policy_changed_at
 
     env.set_seed(seed + 1)
     env.reset()
@@ -65,7 +70,6 @@ def experiment_runner(env, name="Experiment"):
         with_rho_trick=False,
     )
 
-
     statesmart_agent_with = StateSMARTRLAgent(
         name="State SMART (update on policy)", action_space=env.get_action_space()
     )
@@ -103,7 +107,6 @@ def experiment_runner(env, name="Experiment"):
         with_rho_trick=False,
     )
 
-
     harmonic_agent_with_trick = HarmonicRLAgent(
         name="harmonic (update on policy)", action_space=env.get_action_space()
     )
@@ -112,7 +115,6 @@ def experiment_runner(env, name="Experiment"):
         action_space=env.get_action_space(),
         with_rho_trick=False,
     )
-
 
     harmonic2_with = HarmonicRLAgent2(
         name="Harmonic2 (update on policy)", action_space=env.get_action_space()
@@ -132,7 +134,6 @@ def experiment_runner(env, name="Experiment"):
         with_rho_trick=False,
     )
 
-
     adapt_harmonic_agent_with_trick = AdaptiveHarmonicRLAgent(
         name="Adapt. harmonic (update on policy)", action_space=env.get_action_space()
     )
@@ -141,7 +142,6 @@ def experiment_runner(env, name="Experiment"):
         action_space=env.get_action_space(),
         with_rho_trick=False,
     )
-
 
     adapt_harmonic2_with = AdaptiveHarmonicRLAgent2(
         name="Adapt. Harmonic2 (update on policy)", action_space=env.get_action_space()
@@ -152,8 +152,6 @@ def experiment_runner(env, name="Experiment"):
         with_rho_trick=False,
     )
 
-
-    print("Got here")
     agents = [
         oracle,
         random_agent,
@@ -185,7 +183,7 @@ def experiment_runner(env, name="Experiment"):
     ]
 
     episodes = 5000
-    eval_steps = 100
+    eval_steps = 1000
     epochs = 100
     results = defaultdict(dict)
     for agent in agents:
@@ -194,31 +192,31 @@ def experiment_runner(env, name="Experiment"):
         # do all learning agents agree?
         best_action_per_state = defaultdict(list)
         avg_rewards = []
+        avg_last_policy_change = []
         for i in range(1, epochs + 1):
             agent.reset()
-            avg_reward = train_single_agent(
-                agent, env, episodes=episodes, eval_steps=eval_steps, seed=i
-            )
+            avg_reward = train_single_agent(agent, env, episodes=episodes, eval_steps=eval_steps, seed=i)
             avg_rewards.append(avg_reward)
-            for state in agent.q_table:
-                actions = agent.q_table[state]
-                best_action = max(actions, key=actions.get)
-                best_action_per_state[state].append(best_action)
+            avg_last_policy_change.append(agent.last_policy_changed_at)
+            if i == epochs:
+                for state in agent.q_table:
+                    actions = agent.q_table[state]
+                    best_action = max(actions, key=actions.get)
+                    best_action_per_state[state].append(best_action)
         # Print the best action ratio for each state
         results[agent.name] = {
-            f"Average Reward over {eval_steps} steps": sum(avg_rewards)
-            / len(avg_rewards)
+            f"Average Reward over {eval_steps} steps": sum(avg_rewards) / len(avg_rewards),
+            f"Avg Last Policy Change (over {epochs} runs)": sum(avg_last_policy_change) / len(avg_last_policy_change),
         }
         print(f"Best action ratio for {agent.name}:")
         for state, actions in best_action_per_state.items():
-            best_action_ratio = len(
-                [i for i in actions if i == oracle.act(state)]
-            ) / len(actions)
+            best_action_ratio = len([i for i in actions if i == oracle.act(state)]) / len(actions)
             print(f"State {state}: Best Action Ratio: {best_action_ratio}")
             results[agent.name][f"State {state} Best Action Ratio"] = best_action_ratio
         print(
-            f"{agent.name}: Average Reward over {eval_steps} steps: {sum(avg_rewards) / len(avg_rewards)}"
-        )
+            f"{agent.name}: Average Reward over {eval_steps} steps: {sum(avg_rewards) / len(avg_rewards)} +- {pd.Series(avg_rewards).std()}")
+        print(
+            f"{agent.name}: Avg Last Policy Change (over {epochs} runs): {sum(avg_last_policy_change) / len(avg_last_policy_change)} +- {pd.Series(avg_last_policy_change).std()}")
         print("-" * 50)
         print()
 
@@ -240,7 +238,7 @@ if __name__ == "__main__":
     )
     two_state_cyclic = UnevenCycling("Two states cycling, no transition changes")
     two_state_latcyclic = UnevenLatentCycling("Two states cycling, no transition changes")
-    shifting_twostate =ShiftingUnevenTwoStates("Shifting Uneven Two States") 
+    shifting_twostate = ShiftingUnevenTwoStates("Shifting Uneven Two States")
 
     # Run experiments for each environment
     # experiment_runner(stateless_env, name="Stateless Environment Experiment")

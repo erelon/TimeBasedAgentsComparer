@@ -1,3 +1,4 @@
+import copy
 import math
 import sys
 from random import Random
@@ -22,6 +23,7 @@ class Agent:
         self.seed = seed
         self.rng = Random(self.seed)
         self.rng.seed(self.seed)
+        self.policy_changed = False
 
     def __repr__(self):
         return f"Agent(name={self.name})"
@@ -53,6 +55,24 @@ class Agent:
         Update the agent's knowledge based on the action taken and the reward received.
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
+
+    def _check_convergence(self, state, action, update_value, assign=False):
+        if len(self.q_table) == 0:
+            return False
+        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
+        table = copy.copy(self.q_table[state])
+        if not assign:
+            table[action] += update_value
+        else:
+            table[action] = update_value
+        best_action_after_update = max(table, key=table.get)
+        if best_current_action != best_action_after_update:
+            self.policy_changed = True
+        else:
+            self.policy_changed = False
+
+    def get_policy_changed(self):
+        return self.policy_changed
 
 
 class OracleAgent(Agent):
@@ -125,7 +145,7 @@ class QLearningAgent(Agent):
         self.discount_factor = discount_factor
         self.exploration_rate = exploration_rate
         self.q_table = {}
-        self.first_report = True
+        self.policy_changed = False
 
     def act(self, state):
         """
@@ -133,8 +153,6 @@ class QLearningAgent(Agent):
         """
         if state not in self.q_table:
             self.q_table[state] = {action: MAX_REWARDS for action in self.action_space}
-
-        # print(f"Act {self.q_table.items()}", file=sys.stderr)
 
         if self.rng.random() < self.exploration_rate:
             return self.rng.choice(self.action_space)  # Explore
@@ -145,7 +163,6 @@ class QLearningAgent(Agent):
         """
         Reset the agent's knowledge and state.
         """
-        self.first_report = True
         self.q_table = {}
 
     def eval(self, state):
@@ -154,10 +171,6 @@ class QLearningAgent(Agent):
         """
         if state not in self.q_table:
             self.q_table[state] = {action: MAX_REWARDS for action in self.action_space}
-
-        # if self.first_report:
-        # self.first_report = False
-        # print(f"Eval {self.q_table.items()}")
 
         return max(self.q_table[state], key=self.q_table[state].get)
 
@@ -172,10 +185,11 @@ class QLearningAgent(Agent):
             self.q_table[next_state], key=self.q_table[next_state].get
         )
         td_target = (
-            reward + self.discount_factor * self.q_table[next_state][best_next_action]
+                reward + self.discount_factor * self.q_table[next_state][best_next_action]
         )
         td_error = td_target - self.q_table[state][action]
 
+        self._check_convergence(state, action, self.learning_rate * td_error)
         # Update Q-value
         self.q_table[state][action] += self.learning_rate * td_error
 
@@ -207,6 +221,7 @@ class ContinuousQLearningAgent(QLearningAgent):
         td_error = td_target - self.q_table[state][action]
 
         # Update Q-value
+        self._check_convergence(state, action, self.learning_rate * td_error)
         self.q_table[state][action] += self.learning_rate * td_error
 
 
@@ -217,13 +232,13 @@ class RLAgent(QLearningAgent):
     """
 
     def __init__(
-        self,
-        name: str,
-        action_space=None,
-        learning_rate=0.2,
-        exploration_rate=0.1,
-        with_rho_trick=True,
-        _rho_learning_rate=0.03,
+            self,
+            name: str,
+            action_space=None,
+            learning_rate=0.2,
+            exploration_rate=0.1,
+            with_rho_trick=True,
+            _rho_learning_rate=0.03,
     ):
         super().__init__(
             name, action_space, learning_rate, exploration_rate=exploration_rate
@@ -255,15 +270,15 @@ class RLAgent(QLearningAgent):
 
         best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         delta = (
-            reward
-            - self.rho
-            + self.q_table[next_state][best_next_action]
-            - self.q_table[state][action]
+                reward
+                - self.rho
+                + self.q_table[next_state][best_next_action]
+                - self.q_table[state][action]
         )
 
-        self.q_table[state][action] += self.learning_rate * delta  # q = (1-learning)*q + learning*(reward - rho + q_next)
+        self._check_convergence(state, action, self.learning_rate * delta)
+        self.q_table[state][action] += self.learning_rate * delta
 
-        # if not self.with_rho_trick or (self.with_rho_trick and (self.q_table[state][action] == self.q_table[state][best_current_action])):
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
             self.rho += self.rho_learning_rate * delta
 
@@ -297,12 +312,13 @@ class ContinuousRLAgent(RLAgent):
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
         delta = (
-            reward
-            - self.rho * time
-            + self.q_table[next_state][best_next_action]
-            - self.q_table[state][action]
+                reward
+                - self.rho * time
+                + self.q_table[next_state][best_next_action]
+                - self.q_table[state][action]
         )
 
+        self._check_convergence(state, action, self.learning_rate * delta)
         self.q_table[state][action] += self.learning_rate * delta
 
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
@@ -320,8 +336,6 @@ class MyopicRLearn(RLAgent):
         super().__init__(
             name, action_space, learning_rate, exploration_rate, with_rho_trick, rho_learning_rate
         )
-        # self.total_time = 0
-        # self.total_reward = 0
 
     def learn(self, state, action, reward, next_state, time):
         """
@@ -331,18 +345,19 @@ class MyopicRLearn(RLAgent):
         if next_state not in self.q_table:
             self.q_table[next_state] = {action: 0 for action in self.action_space}
 
-        # best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
         delta = reward - self.rho
 
-        self.q_table[state][action] = self.learning_rate * delta + (1 - self.learning_rate) * self.q_table[state][action]
+        self._check_convergence(state, action,
+                                self.learning_rate * delta + (1 - self.learning_rate) * self.q_table[state][
+                                    action], True)
 
+        self.q_table[state][action] = self.learning_rate * delta + (1 - self.learning_rate) * self.q_table[state][
+            action]
 
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
             self.rho = (1 - self.rho_learning_rate) * self.rho + self.rho_learning_rate * reward
-            # self.total_time += time
-            # self.total_reward += reward
 
 
 class HarmonicQAgent(QLearningAgent):
@@ -389,6 +404,7 @@ class HarmonicQAgent(QLearningAgent):
 
         # Update Q-value
         self.rq_table[state][action] += self.learning_rate * td_error
+        self._check_convergence(state, action, 1 / self.rq_table[state][action], True)
         self.q_table[state][action] = 1 / self.rq_table[state][action]
 
 
@@ -447,6 +463,7 @@ class ContinuesMAB(Agent):
         self.total_reward[state][action] += reward
         if self.total_time[state][action] == 0:
             return
+        self._check_convergence(state, action, self.total_reward[state][action] / self.total_time[state][action], True)
         self.q_table[state][action] = self.total_reward[state][action] / self.total_time[state][action]
 
 
@@ -505,6 +522,7 @@ class MAB(Agent):
         self.total_reward[state][action] += reward
         if self.total_steps[state][action] == 0:
             return
+        self._check_convergence(state, action, self.total_reward[state][action] / self.total_steps[state][action], True)
         self.q_table[state][action] = self.total_reward[state][action] / self.total_steps[state][action]
 
 
@@ -539,15 +557,15 @@ class UCB(Agent):
 
         ucb_values = {
             action: (
-                self.q_table[state][action]
-                + self.exploration_constant
-                * math.sqrt(
-                    2
-                    * (
+                    self.q_table[state][action]
+                    + self.exploration_constant
+                    * math.sqrt(
+                2
+                * (
                         math.log(sum(self.total_steps[state].values()))
                         / (self.total_steps[state][action])
-                    )
                 )
+            )
             )
             for action in self.action_space
         }
@@ -573,8 +591,7 @@ class UCB(Agent):
 
         self.total_steps[state][action] += 1
         self.total_reward[state][action] += reward
-        # if self.total_steps[state][action] == 0:
-        # return
+        self._check_convergence(state, action, self.total_reward[state][action] / self.total_steps[state][action], True)
         self.q_table[state][action] = self.total_reward[state][action] / self.total_steps[state][action]
 
 
@@ -610,15 +627,15 @@ class ContinuosUCB(Agent):
 
         ucb_values = {
             action: (
-                self.q_table[state][action]
-                + self.exploration_constant
-                * math.sqrt(
-                    2
-                    * (
+                    self.q_table[state][action]
+                    + self.exploration_constant
+                    * math.sqrt(
+                2
+                * (
                         math.log(sum(self.total_count[state].values()))
                         / (self.total_count[state][action])
-                    )
                 )
+            )
             )
             for action in self.action_space
         }
@@ -644,9 +661,10 @@ class ContinuosUCB(Agent):
 
         self.total_time[state][action] += time
         self.total_reward[state][action] += reward
-        self.q_table[state][action] = (
-            self.total_reward[state][action] / self.total_time[state][action]
-        )
+        self._check_convergence(state, action, self.total_reward[state][action] / self.total_time[state][action], True)
+
+        self.q_table[state][action] = (self.total_reward[state][action] / self.total_time[state][action])
+
 
 class HarmonicRLAgent2(RLAgent):
     """
@@ -655,13 +673,13 @@ class HarmonicRLAgent2(RLAgent):
     """
 
     def __init__(
-        self,
-        name: str,
-        action_space=None,
-        learning_rate=0.1,
-        exploration_rate=0.1,
-        with_rho_trick=True,
-        rho_learning_rate=0.3,
+            self,
+            name: str,
+            action_space=None,
+            learning_rate=0.1,
+            exploration_rate=0.1,
+            with_rho_trick=True,
+            rho_learning_rate=0.3,
     ):
         super().__init__(
             name,
@@ -676,7 +694,7 @@ class HarmonicRLAgent2(RLAgent):
     def reset(self):
         super().reset()
         self.rq_table = {}
-        self.reciprocal_rho = 1.0 
+        self.reciprocal_rho = 1.0
 
         self.total_time = 0
         self.total_reward = 0
@@ -700,21 +718,24 @@ class HarmonicRLAgent2(RLAgent):
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
         recip_td_target = (
-            (time / reward)
-            - self.reciprocal_rho
-            + (self.rq_table[next_state][best_next_action])
+                (time / reward)
+                - self.reciprocal_rho
+                + (self.rq_table[next_state][best_next_action])
         )
         recip_td_error = recip_td_target - self.rq_table[state][action]
 
         self.rq_table[state][action] += self.learning_rate * recip_td_error
+
+        self._check_convergence(state, action, 1 / self.rq_table[state][action], True)
         self.q_table[state][action] = 1 / self.rq_table[state][action]
-     
+
         if not self.with_rho_trick or (
-            self.with_rho_trick and action == best_current_action
+                self.with_rho_trick and action == best_current_action
         ):
             # self.reciprocal_rho = 0;
             # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward))   ## EMA of reciprocals
-            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_error)   ## EMA of reciprocals of td_error? td_target
+            self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (
+                recip_td_error)  ## EMA of reciprocals of td_error? td_target
             # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_target)   ## EMA of reciprocals of td_error? td_target
             # self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (self.rq_table[state][action] )
             self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
@@ -755,15 +776,16 @@ class SMARTRLAgent(RLAgent):
         deltarho = reward - self.rho * time
 
         delta = (
-            deltarho
-            + self.q_table[next_state][best_next_action]
-            - self.q_table[state][action]
+                deltarho
+                + self.q_table[next_state][best_next_action]
+                - self.q_table[state][action]
         )
 
+        self._check_convergence(state, action, self.learning_rate * delta)
         self.q_table[state][action] += self.learning_rate * delta
 
         if not self.with_rho_trick or (
-            self.with_rho_trick and action == best_current_action
+                self.with_rho_trick and action == best_current_action
         ):
             self.total_time += time
             self.total_reward += reward
@@ -777,13 +799,13 @@ class HarmonicRLAgent(RLAgent):
     """
 
     def __init__(
-        self,
-        name: str,
-        action_space=None,
-        learning_rate=0.1,
-        exploration_rate=0.1,
-        with_rho_trick=True,
-        rho_learning_rate=0.3,
+            self,
+            name: str,
+            action_space=None,
+            learning_rate=0.1,
+            exploration_rate=0.1,
+            with_rho_trick=True,
+            rho_learning_rate=0.3,
     ):
         super().__init__(
             name,
@@ -811,31 +833,30 @@ class HarmonicRLAgent(RLAgent):
         if next_state not in self.q_table:
             self.q_table[next_state] = {action: 0 for action in self.action_space}
 
-        best_next_action = max(
-            self.q_table[next_state], key=self.q_table[next_state].get
-        )
+        best_next_action = max(self.q_table[next_state], key=self.q_table[next_state].get)
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
         deltarho = reward - self.rho * time
 
         delta = (
-            deltarho
-            + self.q_table[next_state][best_next_action]
-            - self.q_table[state][action]
+                deltarho
+                + self.q_table[next_state][best_next_action]
+                - self.q_table[state][action]
         )
 
+        self._check_convergence(state, action, self.learning_rate * delta)
         self.q_table[state][action] += self.learning_rate * delta
 
         if not self.with_rho_trick or (
-            self.with_rho_trick and action == best_current_action
+                self.with_rho_trick and action == best_current_action
         ):
-            self.reciprocal_rho = (1-self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate*(time / (reward))  ## EMA of reciprocals
+            self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (
+                    time / (reward))
             # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (delta))   ## EMA of reciprocals
             self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
             self.total_time += time
             self.total_reward += reward
-        # print(f"reciprocal: {self.reciprocal_rho}, rho: {self.rho}, moving: {self.total_reward/self.total_time}, last d, r,t: {delta, reward, time}", file=sys.stderr)
-        
+
 
 class AdaptiveHarmonicRLAgent2(RLAgent):
     """
@@ -844,13 +865,13 @@ class AdaptiveHarmonicRLAgent2(RLAgent):
     """
 
     def __init__(
-        self,
-        name: str,
-        action_space=None,
-        learning_rate=0.1,
-        exploration_rate=0.1,
-        with_rho_trick=True,
-        rho_learning_rate=0.3,
+            self,
+            name: str,
+            action_space=None,
+            learning_rate=0.1,
+            exploration_rate=0.1,
+            with_rho_trick=True,
+            rho_learning_rate=0.3,
     ):
         super().__init__(
             name,
@@ -865,7 +886,7 @@ class AdaptiveHarmonicRLAgent2(RLAgent):
     def reset(self):
         super().reset()
         self.rq_table = {}
-        self.reciprocal_rho = 1.0 
+        self.reciprocal_rho = 1.0
         self.error_scale = 1.0
         self.error_scale_learning_rate = 0.1
 
@@ -891,16 +912,16 @@ class AdaptiveHarmonicRLAgent2(RLAgent):
         best_current_action = max(self.q_table[state], key=self.q_table[state].get)
 
         recip_td_target = (
-            (time / reward)
-            - self.reciprocal_rho
-            + (self.rq_table[next_state][best_next_action])
+                (time / reward)
+                - self.reciprocal_rho
+                + (self.rq_table[next_state][best_next_action])
         )
         recip_td_error = recip_td_target - self.rq_table[state][action]
 
         rdeltarho = abs(time / reward - self.reciprocal_rho)
 
         # attempt galk
-        z = 1.0- ((self.reciprocal_rho) /((rdeltarho + self.reciprocal_rho)))
+        z = 1.0 - ((self.reciprocal_rho) / ((rdeltarho + self.reciprocal_rho)))
 
         # attempt gpt scaling
         # update error scaling
@@ -913,14 +934,15 @@ class AdaptiveHarmonicRLAgent2(RLAgent):
 
         alpha_min, alpha_max = 0.001, 0.8
 
-        alpha = alpha_min+(alpha_max-alpha_min)*(z/(z+0.1))
+        alpha = alpha_min + (alpha_max - alpha_min) * (z / (z + 0.1))
         # alpha = alpha_max*(rdeltarho/(rdeltarho+self.error_scale))**0.5
 
         # print(f"alpha {alpha} reward {reward} time {time} self.reciprocal_rho {self.reciprocal_rho} rdelta {rdeltarho} recip_td_error {recip_td_error} target: {recip_td_target}",
-            # file=sys.stderr,)
+        # file=sys.stderr,)
 
         self.rq_table[state][action] += alpha * recip_td_error
         # self.rq_table[state][action] += self.learning_rate * recip_td_error
+        self._check_convergence(state, action, 1 / self.rq_table[state][action], True)
         self.q_table[state][action] = 1 / self.rq_table[state][action]
 
         # delta = (
@@ -931,11 +953,12 @@ class AdaptiveHarmonicRLAgent2(RLAgent):
         # )
 
         if not self.with_rho_trick or (
-            self.with_rho_trick and action == best_current_action
+                self.with_rho_trick and action == best_current_action
         ):
             # self.reciprocal_rho = 0;
             # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (time / (reward))   ## EMA of reciprocals
-            self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_error)   ## EMA of reciprocals of td_error? td_target
+            self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (
+                recip_td_error)  ## EMA of reciprocals of td_error? td_target
             # self.reciprocal_rho = (1-self.rho_learning_rate)*self.reciprocal_rho + self.rho_learning_rate * (recip_td_target)   ## EMA of reciprocals of td_error? td_target
             # self.reciprocal_rho = (1 - self.rho_learning_rate) * self.reciprocal_rho + self.rho_learning_rate * (self.rq_table[state][action] )
             self.rho = 1 / self.reciprocal_rho  ## transforms to harmonic mean
@@ -951,13 +974,13 @@ class AdaptiveSMARTRLAgent(RLAgent):
     """
 
     def __init__(
-        self,
-        name: str,
-        action_space=None,
-        learning_rate=0.1,
-        exploration_rate=0.1,
-        with_rho_trick=True,
-        rho_learning_rate=0.3,
+            self,
+            name: str,
+            action_space=None,
+            learning_rate=0.1,
+            exploration_rate=0.1,
+            with_rho_trick=True,
+            rho_learning_rate=0.3,
     ):
         super().__init__(
             name,
@@ -988,9 +1011,9 @@ class AdaptiveSMARTRLAgent(RLAgent):
         deltarho = reward - self.rho * time
 
         delta = (
-            deltarho
-            + self.q_table[next_state][best_next_action]
-            - self.q_table[state][action]
+                deltarho
+                + self.q_table[next_state][best_next_action]
+                - self.q_table[state][action]
         )
 
         # alpha=(abs(deltarho)+0.001)/(reward+self.rho*time)
@@ -999,9 +1022,12 @@ class AdaptiveSMARTRLAgent(RLAgent):
 
         # alpha = alpha**2
 
-        print(f"alpha {alpha} reward {reward} time {time} rho-time {self.rho*time} deltarho {deltarho} delta: {delta}", file=sys.stderr)
+        print(
+            f"alpha {alpha} reward {reward} time {time} rho-time {self.rho * time} deltarho {deltarho} delta: {delta}",
+            file=sys.stderr)
 
         # self.q_table[state][action] += self.learning_rate * delta
+        self._check_convergence(state, action, alpha * delta)
         self.q_table[state][action] += alpha * delta
 
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
@@ -1046,13 +1072,13 @@ class AdaptiveHarmonicRLAgent(RLAgent):
         deltarho = reward - self.rho * time
 
         delta = (
-            deltarho
-            + self.q_table[next_state][best_next_action]
-            - self.q_table[state][action]
+                deltarho
+                + self.q_table[next_state][best_next_action]
+                - self.q_table[state][action]
         )
 
         # alpha=(abs(deltarho)+0.001)/(reward+self.rho*time)
-        alpha= 1.00001-reward/((abs(deltarho)+reward))
+        alpha = 1.00001 - reward / ((abs(deltarho) + reward))
         # alpha = 1.00001 - (self.rho * time) / ((abs(deltarho) + self.rho * time))
 
         # alpha = alpha**2
@@ -1060,6 +1086,7 @@ class AdaptiveHarmonicRLAgent(RLAgent):
         # print(f"alpha {alpha} reward {reward} time {time} rho-time {self.rho*time} deltarho {deltarho} delta: {delta}", file=sys.stderr,)
 
         # self.q_table[state][action] += self.learning_rate * delta
+        self._check_convergence(state, action, alpha * delta)
         self.q_table[state][action] += alpha * delta
 
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
@@ -1114,6 +1141,7 @@ class StateSMARTRLAgent(RLAgent):
 
         new_q_state = delta + self.q_table[next_state][best_next_action]
 
+        self._check_convergence(state, action, self.learning_rate * (new_q_state - self.q_table[state][action]))
         self.q_table[state][action] += self.learning_rate * (new_q_state - self.q_table[state][action])
 
         if not self.with_rho_trick or (self.with_rho_trick and action == best_current_action):
