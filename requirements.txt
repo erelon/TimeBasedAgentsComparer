@@ -1,1 +1,7 @@
 pandas
+pyyaml
+gymnasium
+pytest
+matplotlib
+seaborn
+plotly>=5.0.0
