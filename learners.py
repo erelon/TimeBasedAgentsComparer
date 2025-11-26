@@ -722,7 +722,6 @@ class HarmonicRLAgent2(RLAgent):
             self.total_reward += reward
             # print(f"reciprocal: {self.reciprocal_rho}, rho: {self.rho}, moving: {self.total_reward/self.total_time}, last tar, err, r,t: {recip_td_target, recip_td_error, reward, time}", file=sys.stderr)
 
-
 class SMARTRLAgent(RLAgent):
     """
     Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
@@ -768,6 +767,53 @@ class SMARTRLAgent(RLAgent):
             self.total_time += time
             self.total_reward += reward
             self.rho = self.total_reward / self.total_time
+
+class SMARTEMARLAgent(RLAgent):
+    """
+    Continuous Reinforcement Learning Agent based on Schwartz's algorithm.
+    This agent is designed for environments with continuous rewards.
+    """
+
+    def __init__(self, name: str, action_space=None, learning_rate=0.1, exploration_rate=0.1, with_rho_trick=True,
+                 rho_learning_rate=0.3, ):
+        super().__init__(
+            name, action_space, learning_rate, exploration_rate, with_rho_trick, rho_learning_rate
+        )
+        self.rho_time = 0
+        self.rho_reward = 0
+        self.beta = rho_learning_rate
+
+    def learn(self, state, action, reward, next_state, time):
+        """
+        Update the agent's knowledge based on the action taken and the reward received.
+        This method is adapted for continuous rewards.
+        """
+        if next_state not in self.q_table:
+            self.q_table[next_state] = {action: 0 for action in self.action_space}
+        if state not in self.q_table:
+            self.q_table[state] = {action: 0 for action in self.action_space}
+
+        best_next_action = max(
+            self.q_table[next_state], key=self.q_table[next_state].get
+        )
+        best_current_action = max(self.q_table[state], key=self.q_table[state].get)
+
+        deltarho = reward - self.rho * time
+
+        delta = (
+            deltarho
+            + self.q_table[next_state][best_next_action]
+            - self.q_table[state][action]
+        )
+
+        self.q_table[state][action] += self.learning_rate * delta
+
+        if not self.with_rho_trick or (
+            self.with_rho_trick and action == best_current_action
+        ):
+            self.rho_time = (1-self.beta)*self.rho_time + self.beta * time
+            self.rho_reward = (1-self.beta)*self.rho_reward + self.beta * reward
+            self.rho = self.rho_reward / self.rho_time
 
 
 class HarmonicRLAgent(RLAgent):

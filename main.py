@@ -102,7 +102,10 @@ def experiment_runner(env, name="Experiment"):
         action_space=env.get_action_space(),
         with_rho_trick=False,
     )
-
+    smartema_r_agent_with_trick = SMARTEMARLAgent(
+        name="SMARTEMA (update on policy)", action_space=env.get_action_space()
+    )
+    
 
     harmonic_agent_with_trick = HarmonicRLAgent(
         name="harmonic (update on policy)", action_space=env.get_action_space()
@@ -172,6 +175,7 @@ def experiment_runner(env, name="Experiment"):
         # statesmart_agent_without,
         smart_r_agent_with_trick,
         # smart_r_agent_without_trick,
+        smartema_r_agent_with_trick,
         harmonic_agent_with_trick,
         # harmonic_agent_without_trick,
         # harmonic2_with,
