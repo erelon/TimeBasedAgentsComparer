@@ -1,0 +1,31 @@
+global:
+  seed: 123
+experiment:
+  name: slope_small
+  episodes: 20
+  eval_steps: 10
+  epochs: 2
+  output_csv: slope_results.csv
+  gym_mode: false
+  results_root: results
+environment:
+  class: envs.shifting.SlopeShiftingUnevenTwoStates
+  name: "Slope Shifting Uneven Two States"
+  params:
+    _maxp: 0.8
+    _maxv: 5
+    _shiftsteps: 5
+    _slope: 0.95
+    _apply_every_step: false
+    interval_min_len: 1
+    interval_max_len: 20
+agents:
+  - class: agents.oracle.OracleAgent
+    name: "Oracle"
+    enabled: true
+    params: {}
+  - class: agents.random_agent.RandomAgent
+    name: "Random"
+    enabled: true
+    params: {}
+

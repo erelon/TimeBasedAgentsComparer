@@ -1,0 +1,67 @@
+global:
+  seed: 999
+experiment:
+  name: gym_stateless
+  episodes: 30
+  eval_steps: 15
+  epochs: 2
+  output_csv: gym_results.csv
+  gym_mode: true
+  epsilon_schedule:
+    start: 0.15
+    end: 0.05
+    decay_type: linear
+    decay_episodes: 25
+  results_root: results
+environment:
+  class: envs.stateless.StatelessEnv
+  name: "Stateless"
+agents:
+  - class: agents.random_agent.RandomAgent
+    name: "Random"
+    enabled: true
+    params: {}
+  - class: agents.q_learning.QLearningAgent
+    name: "Q"
+    enabled: true
+    params: {learning_rate: 0.1}
+global:
+  seed: 42
+experiment:
+  name: shifting
+  episodes: 5000
+  eval_steps: 1000
+  epochs: 10
+  output_csv: results.csv
+  gym_mode: false
+  epsilon_schedule:
+    start: 0.1
+    end: 0.01
+    decay_type: linear
+    decay_episodes: 4000
+  results_root: results
+environment:
+  class: envs.shifting.ShiftingUnevenTwoStates
+  name: "Shifting Uneven Two States"
+  params:
+    _maxp: 0.8
+    _maxv: 5
+    _shiftsteps: 50
+agents:
+  - class: agents.oracle.OracleAgent
+    name: "Oracle"
+    enabled: true
+    params: {}
+  - class: agents.random_agent.RandomAgent
+    name: "Random"
+    enabled: true
+    params: {}
+  - class: agents.q_learning.QLearningAgent
+    name: "Q"
+    enabled: true
+    params: {learning_rate: 0.1, discount_factor: 0.99}
+  - class: agents.r_learning.RLAgent
+    name: "R"
+    enabled: true
+    params: {learning_rate: 0.2}
+

@@ -1,0 +1,31 @@
+global:
+  seed: 42
+experiment:
+  name: temp_small
+  episodes: 5
+  eval_steps: 5
+  epochs: 2
+  output_csv: results.csv
+  gym_mode: false
+  results_root: results/temp
+environment:
+  class: envs.shifting.ShiftingUnevenTwoStates
+  name: "Shifting Uneven Two States"
+  params:
+    _maxp: 0.8
+    _maxv: 5
+    _shiftsteps: 2
+    _shift_min: 0.1
+    _shift_max: 0.5
+    interval_min_len: 1
+    interval_max_len: 20
+agents:
+  - class: agents.oracle.OracleAgent
+    name: "Oracle"
+    enabled: true
+    params: {}
+  - class: agents.random_agent.RandomAgent
+    name: "Random"
+    enabled: true
+    params: {}
+

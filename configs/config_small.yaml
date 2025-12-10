@@ -1,0 +1,32 @@
+global:
+  seed: 123
+experiment:
+  name: small
+  episodes: 50
+  eval_steps: 20
+  epochs: 2
+  output_csv: small_results.csv
+  gym_mode: false
+  epsilon_schedule:
+    start: 0.2
+    end: 0.05
+    decay_type: linear
+    decay_episodes: 40
+  results_root: results
+environment:
+  class: envs.stateless.StatelessEnv
+  name: "Stateless"
+agents:
+  - class: agents.oracle.OracleAgent
+    name: "Oracle"
+    enabled: true
+    params: {}
+  - class: agents.random_agent.RandomAgent
+    name: "Random"
+    enabled: true
+    params: {}
+  - class: agents.q_learning.QLearningAgent
+    name: "Q"
+    enabled: true
+    params: {learning_rate: 0.1}
+

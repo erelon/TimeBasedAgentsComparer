@@ -8,7 +8,7 @@ from plots.multirun_shift_range import run_shift_range_scan  # new: shift range 
 # ---------------------------------------------------------------------------
 # Select exactly one of the following modes by setting its flag to True.
 # Precedence order below: SHIFT RANGE > SLOPE > SINGLE RUN.
-RUN_SHIFT_RANGE_SCAN = True  # Set True to execute shift range sweep (ShiftingUnevenTwoStates)
+RUN_SHIFT_RANGE_SCAN = False  # Set True to execute shift range sweep (ShiftingUnevenTwoStates)
 RUN_SLOPE_SCAN = False  # Set True to execute slope sweep instead of single run
 # (If both above are False) -> Single run from config file
 

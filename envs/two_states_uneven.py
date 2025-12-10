@@ -1,5 +1,6 @@
 from .base import AbstractEnvironment
 
+
 class TwoStatesUnevenDistEnv(AbstractEnvironment):
     def __init__(self, name: str, _maxp=0.8, _maxv=5, **kwargs):
         super().__init__(name, **kwargs)
@@ -35,11 +36,12 @@ class TwoStatesUnevenDistEnv(AbstractEnvironment):
     def secret(self):
         return lambda state: 0 if state == 0 else 1
 
+
 class Uneven_wide(TwoStatesUnevenDistEnv):
     def __init__(self, name: str, **kwargs):
         super().__init__(name, _maxp=0.6, **kwargs)
 
+
 class Uneven_narrow(TwoStatesUnevenDistEnv):
     def __init__(self, name: str, **kwargs):
         super().__init__(name, _maxp=0.2, **kwargs)
-

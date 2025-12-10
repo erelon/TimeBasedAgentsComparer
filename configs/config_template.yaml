@@ -1,0 +1,350 @@
+# ============================================================================
+# Comprehensive Experiment Configuration Template
+# ----------------------------------------------------------------------------
+# This YAML documents all supported configuration keys with inline comments.
+# Copy & adapt this file rather than editing it directly for your experiments.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Global settings (apply to all agents unless overridden per agent internally)
+# ----------------------------------------------------------------------------
+global:
+  seed: 42                 # (int) Base random seed for reproducibility
+
+# ----------------------------------------------------------------------------
+# Experiment-wide settings
+# ----------------------------------------------------------------------------
+experiment:
+  name: example_experiment # (str) Used as prefix for results directory naming
+  episodes: 5000           # (int) Training episodes per epoch for each agent
+  eval_steps: 1000         # (int) Number of evaluation interactions (policy only)
+  epochs: 10               # (int) How many independent runs (with different seeds offset)
+  output_csv: results.csv  # (str) Filename (inside per-run results dir)
+  gym_mode: false          # (bool) If true, wrap environment with Gym SMDP wrapper
+  results_root: results    # (str) Root directory where timestamped run folders are created
+
+  # Optional: Epsilon / exploration decay schedule (applies to agents with 'exploration_rate')
+  # Remove this block to keep exploration constant.
+  epsilon_schedule:
+    start: 0.2             # (float) Initial exploration rate (ε₀)
+    end: 0.01              # (float) Final exploration rate after decay period
+    decay_type: linear     # (str) 'linear' or 'exponential'
+    decay_episodes: 4000   # (int) Over how many episodes to decay (capped at episodes)
+
+  # Alternative key name (legacy / alias) also accepted: 'exploration_schedule'
+  # exploration_schedule: { ...same structure... }
+
+# ----------------------------------------------------------------------------
+# Environment definition (ACTIVE SELECTION BELOW)
+# ----------------------------------------------------------------------------
+# Pick ONE active 'environment:' block. The one below is currently active.
+# After it, a catalog of ALL available environments is provided as commented
+# examples you can copy/uncomment.
+# ----------------------------------------------------------------------------
+environment:
+  class: envs.shifting.ShiftingUnevenTwoStates  # (str) Module.Class path
+  name: "Shifting Uneven Two States"           # (str)
+  params:
+    _maxp: 0.8          # (float) Example param (environment-dependent)
+    _maxv: 5            # (float) Example param (env reward variance scale)
+    _shiftsteps: 50     # (int) Frequency of reward distribution shifts
+    interval_min_len: 1 # (int, optional) Min duration (if supported by env base)
+    interval_max_len: 500 # (int, optional) Max duration (if supported)
+
+# ----------------------------------------------------------------------------
+# AVAILABLE ENVIRONMENT CATALOG (commented templates)
+# Copy one of these blocks above (replacing the active environment) or
+# uncomment and remove others. Only one 'environment:' key may exist.
+# ----------------------------------------------------------------------------
+
+# 1) Stateless single-state environment (baseline bandit-like)
+# environment:
+#   class: envs.stateless.StatelessEnv
+#   name: "Stateless"
+#   params:
+#     interval_min_len: 1      # min duration
+#     interval_max_len: 500    # max duration
+
+# 2) Two states, even distribution of visits
+# environment:
+#   class: envs.two_states_even.TwoStatesEvenDistEnv
+#   name: "Two States Even"
+#   params:
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# 3) Generic uneven two-state environment (adjust reward scaling)
+# environment:
+#   class: envs.two_states_uneven.TwoStatesUnevenDistEnv
+#   name: "Two States Uneven"
+#   params:
+#     _maxp: 0.6        # base performance multiplier
+#     _maxv: 5          # reward variance scalar
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# 3a) Narrow variant (lower reward scale)
+# environment:
+#   class: envs.two_states_uneven.Uneven_narrow
+#   name: "Two States Uneven (Narrow)"
+#   params:
+#     _maxp: 0.2        # override if desired
+#     _maxv: 5
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# 3b) Wide variant (higher reward scale)
+# environment:
+#   class: envs.two_states_uneven.Uneven_wide
+#   name: "Two States Uneven (Wide)"
+#   params:
+#     _maxp: 0.6
+#     _maxv: 5
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# 4) Cycling reward phases with shorter cycle length (visible phase switching)
+# environment:
+#   class: envs.cycling.UnevenCycling
+#   name: "Uneven Cycling (Visible)"
+#   params:
+#     _maxp: 0.8
+#     _maxv: 5
+#     _cycle: 5          # number of steps per phase toggle
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# 5) Latent cycling (phase changes slower / less obvious)
+# environment:
+#   class: envs.cycling.UnevenLatentCycling
+#   name: "Uneven Cycling (Latent)"
+#   params:
+#     _maxp: 0.8
+#     _maxv: 5
+#     _cycle: 50         # longer cycle length
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# 6) Shifting environment (active above by default) – gradually changes reward scaling
+# environment:
+#   class: envs.shifting.ShiftingUnevenTwoStates
+#   name: "Shifting Uneven Two States"
+#   params:
+#     _maxp: 0.8
+#     _maxv: 5
+#     _shiftsteps: 50    # steps between shift events
+#     _shift_min: 0.1    # min random shift_constant value
+#     _shift_max: 1.0    # max random shift_constant value
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# 7) Deterministic slope shifting environment (multiplicative decay/growth)
+# environment:
+#   class: envs.shifting.SlopeShiftingUnevenTwoStates
+#   name: "Slope Shifting Uneven Two States"
+#   params:
+#     _maxp: 0.8
+#     _maxv: 5
+#     _shiftsteps: 50     # interval for slope application (ignored if _apply_every_step=true)
+#     _slope: 0.99        # multiplicative factor applied to shift_constant
+#     _apply_every_step: false  # if true, apply slope each step instead of at intervals
+#     interval_min_len: 1
+#     interval_max_len: 500
+
+# ----------------------------------------------------------------------------
+# Agents list
+# ----------------------------------------------------------------------------
+# Each agent entry defines an independently trained + evaluated learner.
+# Fields:
+#   class: Fully qualified module.Class path.
+#   name:  Display name; appears in results CSV columns.
+#   enabled: (bool) Toggle inclusion without removing the block.
+#   params: Keyword args passed to the agent constructor (optional).
+# ----------------------------------------------------------------------------
+# Common / optional agent parameters (not every agent uses all):
+#   learning_rate (float)
+#   discount_factor (float)            # For Q-learning variants
+#   exploration_rate (float)           # Initial epsilon if schedule is absent
+#   with_rho_trick (bool)              # Average reward update gating
+#   rho_learning_rate (float)          # Rho update step size in R-based agents
+#   _lambda (float)                    # Continuous discount shaping (C-QL)
+#   exploration_constant (float)       # UCB family agents
+# ----------------------------------------------------------------------------
+# NOTE: OracleAgent requires env_secret (auto-injected if omitted for non-gym runs)
+# ----------------------------------------------------------------------------
+agents:
+  # Benchmark oracle (optimal action provider) - no learning
+  - class: agents.oracle.OracleAgent
+    name: "Oracle"
+    enabled: true
+    params: {}
+
+  # Random uniform policy
+  - class: agents.random_agent.RandomAgent
+    name: "Random"
+    enabled: true
+    params: {}
+
+  # Classic Q-Learning (tabular) with optional exploration override
+  - class: agents.q_learning.QLearningAgent
+    name: "Q-Learning"
+    enabled: true
+    params:
+      learning_rate: 0.1
+      discount_factor: 0.99
+      exploration_rate: 0.2        # Used only if no epsilon_schedule present
+
+  # Continuous-time adjusted Q-Learning
+  - class: agents.q_learning.ContinuousQLearningAgent
+    name: "Cont. Q-Learning"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      discount_factor: 0.99
+      _lambda: 0.01                # Time-based exponential modifier
+      exploration_rate: 0.15
+
+  # Harmonic Q variant (uses reciprocal transformations)
+  - class: agents.q_learning.HarmonicQAgent
+    name: "Harmonic Q"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      discount_factor: 0.99
+      exploration_rate: 0.1
+
+  # Average-reward RL (R-Learning) base
+  - class: agents.r_learning.RLAgent
+    name: "R-Learning"
+    enabled: true
+    params:
+      learning_rate: 0.2
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.03
+
+  # Continuous average-reward variant
+  - class: agents.r_learning.ContinuousRLAgent
+    name: "Cont. R-Learning"
+    enabled: false
+    params:
+      learning_rate: 0.2
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.03
+
+  # Myopic R variant (simplified update rule)
+  - class: agents.r_learning.MyopicRLearn
+    name: "Myopic R"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: false
+      rho_learning_rate: 0.3
+
+  # SMART R-Learning
+  - class: agents.smart_r.SMARTRLAgent
+    name: "SMART R"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  # State-aware SMART variant
+  - class: agents.smart_r.StateSMARTRLAgent
+    name: "State SMART R"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.03
+
+  # Adaptive SMART variant
+  - class: agents.smart_r.AdaptiveSMARTRLAgent
+    name: "Adaptive SMART R"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  # Harmonic RL variants (multiple flavors)
+  - class: agents.harmonic_r.HarmonicRLAgent
+    name: "Harmonic R"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  - class: agents.harmonic_r.HarmonicRLAgent2
+    name: "Harmonic R2"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  - class: agents.harmonic_r.AdaptiveHarmonicRLAgent
+    name: "Adaptive Harmonic R"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  - class: agents.harmonic_r.AdaptiveHarmonicRLAgent2
+    name: "Adaptive Harmonic R2"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  # Bandit-style agents
+  - class: agents.bandits.MAB
+    name: "MAB"
+    enabled: false
+    params:
+      learning_rate: 0.1          # Not always used (average-based update)
+      exploration_rate: 0.1
+
+  - class: agents.bandits.ContinuesMAB
+    name: "Continuous MAB"
+    enabled: false
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+
+  - class: agents.bandits.UCB
+    name: "UCB"
+    enabled: false
+    params:
+      exploration_constant: 1.0
+
+  - class: agents.bandits.ContinuosUCB
+    name: "Continuous UCB"
+    enabled: false
+    params:
+      exploration_constant: 1.0
+
+# ----------------------------------------------------------------------------
+# Notes:
+# 1. Remove or set enabled: false to skip agents without deleting their blocks.
+# 2. For large sweeps, create multiple configs or script generation.
+# 3. Gym mode disables oracle env_secret auto-injection (oracle may be less meaningful).
+# 4. Additional environment params: check envs/<file>.py for supported kwargs.
+# 5. Add new agents/environments by placing code under agents/ or envs/ and referencing
+#    via their import path here.
+# 6. Results are stored under: <results_root>/<experiment_name>_<timestamp>/
+#    containing the output CSV + a copy of this resolved config.
+# ----------------------------------------------------------------------------

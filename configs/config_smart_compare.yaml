@@ -1,0 +1,94 @@
+global:
+  seed: 42
+experiment:
+  name: experiment
+  episodes: 5000
+  eval_steps: 1000
+  epochs: 30
+  output_csv: results.csv
+  gym_mode: false
+  results_root: results
+
+  epsilon_schedule:
+    start: 0.3
+    end: 0.00
+    decay_type: linear     # (str) 'linear' or 'exponential'
+    decay_episodes: 1000   # (int) Over how many episodes to decay (capped at episodes)
+
+environment:
+  class: envs.shifting.ShiftingUnevenTwoStates
+  name: "Shifting Uneven Two States"
+  params:
+    _maxp: 0.8
+    _maxv: 5
+    _shiftsteps: 50    # steps between shift events
+    _shift_min: 1.0    # min random shift_constant value
+    _shift_max: 1.0    # max random shift_constant value
+    interval_min_len: 1
+    interval_max_len: 50
+
+# ----------------------------------------------------------------------------
+# NOTE: OracleAgent requires env_secret (auto-injected if omitted for non-gym runs)
+# ----------------------------------------------------------------------------
+agents:
+  # Benchmark oracle (optimal action provider) - no learning
+  - class: agents.oracle.OracleAgent
+    name: "Oracle"
+    enabled: true
+    params: { }
+
+  # Random uniform policy
+  - class: agents.random_agent.RandomAgent
+    name: "Random"
+    enabled: true
+    params: { }
+
+  # SMART R-Learning
+  - class: agents.smart_r.SMARTRLAgent
+    name: "SMART 0.1"
+    enabled: true
+    params:
+      learning_rate: 0.1
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  # SMART R-Learning
+  - class: agents.smart_r.SMARTRLAgent
+    name: "SMART 0.2"
+    enabled: true
+    params:
+      learning_rate: 0.2
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  # SMART R-Learning
+  - class: agents.smart_r.SMARTRLAgent
+    name: "SMART 0.3"
+    enabled: true
+    params:
+      learning_rate: 0.3
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  # SMART R-Learning
+  - class: agents.smart_r.SMARTRLAgent
+    name: "SMART 0.05"
+    enabled: true
+    params:
+      learning_rate: 0.05
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3
+
+  # SMART R-Learning
+  - class: agents.smart_r.SMARTRLAgent
+    name: "SMART 0.01"
+    enabled: true
+    params:
+      learning_rate: 0.01
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.3

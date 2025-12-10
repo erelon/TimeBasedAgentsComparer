@@ -7,7 +7,7 @@ experiment:
   epochs: 30
   output_csv: results.csv
   gym_mode: false
-  results_root: results/1000_decay
+  results_root: results/2611
 
   epsilon_schedule:
     start: 0.3
@@ -146,9 +146,29 @@ agents:
       with_rho_trick: true
       rho_learning_rate: 0.3
 
+  # EMA SMART variant
+  - class: agents.smart_r.SMARTEMARLAgent
+    name: "EMA SMART R"
+    enabled: true
+    params:
+      learning_rate: 0.3
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.05
+
   # Harmonic RL variants (multiple flavors)
   - class: agents.harmonic_r.HarmonicRLAgent
     name: "Harmonic"
+    enabled: true
+    params:
+      learning_rate: 0.3
+      exploration_rate: 0.1
+      with_rho_trick: true
+      rho_learning_rate: 0.003
+
+  # Harmonic RL variants (multiple flavors)
+  - class: agents.harmonic_r.HarmonicROLAgent
+    name: "HarmonicOld"
     enabled: true
     params:
       learning_rate: 0.3
